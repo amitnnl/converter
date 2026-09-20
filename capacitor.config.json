@@ -1,0 +1,12 @@
+{
+  "appId": "com.presswebp.app",
+  "appName": "PressWebP",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#070a12"
+  }
+}

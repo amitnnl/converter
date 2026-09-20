@@ -95,6 +95,86 @@ while ($httpListener.IsListening) {
             $rawPath = "index.html"
         }
 
+        # Handle OPTIONS preflight
+        if ($request.HttpMethod -eq "OPTIONS") {
+            $response.StatusCode = 200
+            $response.Headers.Add("Access-Control-Allow-Origin", "*")
+            $response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            $response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")
+            $response.Close()
+            continue
+        }
+
+        # Handle POST /save.php or /api/save for auto-saving converted WebP
+        if ($request.HttpMethod -eq "POST" -and ($rawPath.ToLower() -eq "save.php" -or $rawPath.ToLower() -eq "api/save")) {
+            $response.Headers.Add("Access-Control-Allow-Origin", "*")
+            $response.ContentType = "application/json; charset=utf-8"
+
+            try {
+                $length = $request.ContentLength64
+                if ($length -gt 0) {
+                    $buffer = New-Object byte[] $length
+                    $totalRead = 0
+                    while ($totalRead -lt $length) {
+                        $read = $request.InputStream.Read($buffer, $totalRead, ($length - $totalRead))
+                        if ($read -le 0) { break }
+                        $totalRead += $read
+                    }
+                    $body = [System.Text.Encoding]::UTF8.GetString($buffer, 0, $totalRead)
+                } else {
+                    $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
+                    $body = $reader.ReadToEnd()
+                }
+                $json = $body | ConvertFrom-Json
+
+                $safeFilename = if ($json.filename) { [System.IO.Path]::GetFileName($json.filename) } else { "converted_1x1.webp" }
+                $safeFilename = $safeFilename -replace '[^a-zA-Z0-9_\-\.]', '_'
+                if (-not $safeFilename.EndsWith(".webp", [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $safeFilename = [System.IO.Path]::GetFileNameWithoutExtension($safeFilename) + ".webp"
+                }
+
+                $filesDir = Join-Path $rootDir "files"
+                if (-not (Test-Path $filesDir -PathType Container)) {
+                    New-Item -ItemType Directory -Path $filesDir -Force | Out-Null
+                }
+
+                $base64Data = $json.data
+                if ($base64Data -match "base64,(.+)") {
+                    $base64Data = $matches[1]
+                }
+
+                $bytes = [Convert]::FromBase64String($base64Data)
+                $targetPath = Join-Path $filesDir $safeFilename
+                [System.IO.File]::WriteAllBytes($targetPath, $bytes)
+
+                $respObj = @{
+                    success = $true
+                    filename = $safeFilename
+                    path = "files/$safeFilename"
+                    url = "files/$safeFilename"
+                    size = $bytes.Length
+                    savedAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+                }
+
+                $respBytes = [System.Text.Encoding]::UTF8.GetBytes(($respObj | ConvertTo-Json -Compress))
+                $response.StatusCode = 200
+                $response.ContentLength64 = $respBytes.Length
+                $response.OutputStream.Write($respBytes, 0, $respBytes.Length)
+            } catch {
+                $errObj = @{
+                    success = $false
+                    error = $_.Exception.Message
+                }
+                $respBytes = [System.Text.Encoding]::UTF8.GetBytes(($errObj | ConvertTo-Json -Compress))
+                $response.StatusCode = 500
+                $response.ContentLength64 = $respBytes.Length
+                $response.OutputStream.Write($respBytes, 0, $respBytes.Length)
+            }
+
+            $response.Close()
+            continue
+        }
+
         # URL decode path
         $decodedPath = [System.Uri]::UnescapeDataString($rawPath).Replace('/', '\')
         $filePath = Join-Path $rootDir $decodedPath

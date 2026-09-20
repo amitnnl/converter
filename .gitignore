@@ -23,3 +23,27 @@ ehthumbs_vista.db
 scratch/
 tmp/
 temp/
+
+# Dependencies
+node_modules/
+
+# User converted files
+files/*
+!files/.gitkeep
+
+# Android build outputs & Gradle caches
+.gradle/
+.gradle-user/
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/.idea/
+android/local.properties
+android/*.iml
+android/*/*.iml
+
+# Generated binary packages (built via GitHub Actions or BUILD_APK.bat)
+*.apk
+*.aab
+
