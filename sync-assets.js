@@ -13,7 +13,8 @@ const filesToCopy = [
     'webp-muxer.js',
     'favicon.svg',
     'save.php',
-    '1002622311_1x1_6sec.webp'
+    '1002622311_1x1_6sec.webp',
+    'sample_news_photo.jpg'
 ];
 
 const wwwFilesDir = path.join(wwwDir, 'files');

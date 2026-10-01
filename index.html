@@ -43,18 +43,24 @@
                 <div class="brand-logo">PW</div>
                 <div>
                     <div class="brand-title">
-                        PressWebP <span class="badge">1:1 Edition</span>
+                        PressWebP <span class="badge" id="appModeBadge">Unified Newsroom Suite</span>
                     </div>
-                    <div class="brand-subtitle">Editorial Video-to-WebP Compressor for Newsroom Desks</div>
+                    <div class="brand-subtitle">Editorial 1:1 Media-to-WebP Converter for Video &amp; Photos</div>
                 </div>
+            </div>
+
+            <div class="header-center-info" style="display: flex; align-items: center; gap: 8px;">
+                <span class="meta-pill" style="background: rgba(6, 182, 212, 0.12); color: var(--brand-cyan); border-color: rgba(6, 182, 212, 0.35); font-weight: 600; padding: 5px 14px; font-size: 12px;">
+                    ⚡ Unified Suite: Video &amp; Photo to 1:1 WebP
+                </span>
             </div>
 
             <div class="header-actions">
                 <div class="pill-status">
                     100% Client-Side • Embargo Safe
                 </div>
-                <button id="btnInspectSample" class="btn btn-secondary btn-sm" title="Inspect bundled sample file">
-                    🔍 Inspect Sample File (720x720)
+                <button id="btnInspectSample" class="btn btn-secondary btn-sm" title="Inspect bundled sample WebP file">
+                    🔍 Inspect WebP Sample
                 </button>
                 <button id="btnThemeToggle" class="theme-toggle-btn" title="Toggle Theme (Light / Dark)" aria-label="Toggle Theme" aria-pressed="false">
                     <span class="theme-toggle-track">
@@ -71,36 +77,46 @@
     <!-- Main Container -->
     <main class="main-container">
 
-        <!-- Hero Title & Quick Tools -->
+        <!-- Unified Hero Title & Quick Tools -->
         <section class="hero-banner">
             <div class="hero-text">
-                <h1>Video to 1:1 Square WebP Converter</h1>
-                <p>Convert breaking news, interviews, and reels into optimized 1:1 animated WebP files for instant mobile loading.</p>
+                <h1>Editorial Media to 1:1 WebP Converter</h1>
+                <p>Convert breaking news photos and video clips into optimized 1:1 square WebP files. Auto-detects media, frames to 1:1 editorial ratios, applies newsroom watermarks, and outputs web-ready WebP files.</p>
             </div>
             <div class="hero-quick-tools">
-                <button id="btnLoadDemoVideo" class="btn btn-accent btn-sm">
-                    🎬 Load News Demo Video
+                <button id="btnLoadDemoImage" class="btn btn-accent btn-sm">
+                    📸 Load Demo Photo
                 </button>
-                <button id="btnLoadSampleWebp" class="btn btn-secondary btn-sm">
-                    📂 Load 1002622311_1x1_6sec.webp
+                <button id="btnLoadDemoVideo" class="btn btn-accent btn-sm">
+                    🎬 Load Demo Video
+                </button>
+                <button id="btnPasteClipboard" class="btn btn-secondary btn-sm" title="Paste photo from clipboard (Ctrl+V)">
+                    📋 Paste Clipboard (Ctrl+V)
+                </button>
+                <button id="btnLoadSampleWebp" class="btn btn-secondary btn-sm" title="Inspect bundled sample WebP file">
+                    📂 Sample WebP
                 </button>
             </div>
         </section>
 
-        <!-- Dropzone / Upload Stage -->
-        <section id="uploadSection" class="dropzone-container">
-            <input type="file" id="videoFileInput" accept="video/*,.webp" class="hidden">
-            <div class="dropzone-icon">📹</div>
-            <h2 class="dropzone-title">Drop your news video clip here, or browse files</h2>
-            <p class="dropzone-desc">Supports MP4, MOV, WebM, AVI, and MKV. Operates entirely inside your browser—no uploads to any cloud or remote server.</p>
-            <button id="btnBrowseFiles" class="btn btn-primary btn-lg">
-                Browse Video File
-            </button>
+        <!-- Single Unified Dropzone / Upload Stage -->
+        <section id="unifiedUploadSection" class="dropzone-container">
+            <input type="file" id="mediaFileInput" accept="image/*,video/*,.mp4,.mov,.webm,.avi,.mkv,.jpg,.jpeg,.png,.webp,.avif,.bmp,.gif,.svg,.tiff" multiple class="hidden">
+            <div class="dropzone-icon">⚡</div>
+            <h2 class="dropzone-title">Drop your news video or photo(s) here, or browse files</h2>
+            <p class="dropzone-desc">Auto-detects videos and photos. Drag single clips or multiple photos for instant batch processing. Operates 100% inside your browser—embargo safe with zero cloud uploads.</p>
+            <div class="dropzone-actions" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button id="btnBrowseMediaFiles" class="btn btn-primary btn-lg">
+                    📂 Browse Video or Photo(s)
+                </button>
+            </div>
             <div class="dropzone-quick-chips">
-                <span class="chip-tag">1:1 Square Presets</span>
-                <span class="chip-tag">Lossy VP8 Compression</span>
-                <span class="chip-tag">Frame Trimming</span>
-                <span class="chip-tag">Zero Server Costs</span>
+                <span class="chip-tag">🎯 1:1 Editorial Ratio</span>
+                <span class="chip-tag">🎬 6s Video (500–800 KB)</span>
+                <span class="chip-tag">📸 Photo WebP (&lt;100 KB)</span>
+                <span class="chip-tag">🏷️ "GROUND ZERO" Watermark</span>
+                <span class="chip-tag">📁 Auto-Save to files/</span>
+                <span class="chip-tag">🔒 Zero Server Uploads</span>
             </div>
         </section>
 
@@ -125,8 +141,8 @@
                     <!-- 1:1 Aspect Ratio Cropping Viewfinder Overlay -->
                     <div class="crop-overlay-container" id="cropOverlayContainer">
                         <div class="crop-guide-square" id="cropGuideSquare">
-                            <!-- Live Viewfinder Watermark Overlay -->
-                            <div id="viewfinderWatermark" class="viewfinder-watermark-overlay pos-bottom-right">
+                            <!-- Live Viewfinder Watermark Overlay (Centered) -->
+                            <div id="viewfinderWatermark" class="viewfinder-watermark-overlay pos-center">
                                 <span class="watermark-dot"></span>
                                 <span id="viewfinderWatermarkText" class="watermark-text-display">GROUND ZERO</span>
                             </div>
@@ -188,30 +204,27 @@
                     <div class="panel-title">
                         ⚙️ Conversion & Compression
                     </div>
+                    <span class="form-value-tag active-tag">Standards & Watermark</span>
                 </div>
 
-                <!-- Quick Presets -->
+                <!-- Editorial Standards Presets -->
                 <div class="form-group">
                     <div class="form-label-row">
-                        <span>Editorial Presets</span>
+                        <span>Editorial Standards (6s Duration • 500KB–800KB Target)</span>
+                        <span class="preset-badge" style="position:static; margin-left:auto;">500–800 KB Met ✅</span>
                     </div>
                     <div class="preset-grid">
-                        <div class="preset-card active" id="presetSample" data-w="720" data-h="720" data-fps="10" data-q="75" data-dur="6">
-                            <span class="preset-badge">Sample</span>
-                            <div class="preset-title">📰 News Teaser</div>
-                            <div class="preset-meta">720×720 • 10 FPS • 6s</div>
+                        <div class="preset-card active" id="presetSample" data-w="640" data-h="640" data-fps="10" data-q="65" data-dur="6">
+                            <div class="preset-title">📰 6s News Standard</div>
+                            <div class="preset-meta">640×640 • 10 FPS • 6s (500–800 KB)</div>
                         </div>
-                        <div class="preset-card" id="presetLite" data-w="480" data-h="480" data-fps="10" data-q="65" data-dur="3">
-                            <div class="preset-title">⚡ Mobile Fast</div>
-                            <div class="preset-meta">480×480 • 10 FPS • &lt;800KB</div>
+                        <div class="preset-card" id="presetLite" data-w="540" data-h="540" data-fps="10" data-q="60" data-dur="6">
+                            <div class="preset-title">⚡ 6s Fast Wire</div>
+                            <div class="preset-meta">540×540 • 10 FPS • 6s (~500 KB)</div>
                         </div>
-                        <div class="preset-card" id="presetHQ" data-w="720" data-h="720" data-fps="15" data-q="80" data-dur="6">
-                            <div class="preset-title">💎 HQ Feature</div>
-                            <div class="preset-meta">720×720 • 15 FPS • 6s</div>
-                        </div>
-                        <div class="preset-card" id="presetSocial" data-w="1080" data-h="1080" data-fps="12" data-q="75" data-dur="6">
-                            <div class="preset-title">📱 Social Feed</div>
-                            <div class="preset-meta">1080×1080 • 12 FPS • 6s</div>
+                        <div class="preset-card" id="presetHQ" data-w="720" data-h="720" data-fps="8" data-q="62" data-dur="6">
+                            <div class="preset-title">💎 6s HD News</div>
+                            <div class="preset-meta">720×720 • 8 FPS • 6s (~750 KB)</div>
                         </div>
                     </div>
                 </div>
@@ -233,71 +246,21 @@
                     </div>
                 </div>
 
-                <!-- Trimming / Duration Controls -->
+                <!-- Standard Duration Controls -->
                 <div class="form-group">
                     <div class="form-label-row">
-                        <span>Clip Duration Trimming</span>
+                        <span>Standard Duration (6.0 sec)</span>
                         <span class="form-value-tag" id="valDuration">6.0 sec</span>
                     </div>
-                    <div class="trim-inputs-row">
-                        <div class="input-box">
-                            <span>Start Time (sec)</span>
-                            <input type="number" id="trimStart" class="input-control" value="0.0" step="0.1" min="0">
-                        </div>
-                        <div class="input-box">
-                            <span>End Time (sec)</span>
-                            <input type="number" id="trimEnd" class="input-control" value="6.0" step="0.1" min="0.1">
-                        </div>
-                    </div>
                     <div class="quick-duration-chips">
+                        <button type="button" class="chip-btn active" id="btnDur6">6s (Standard)</button>
                         <button type="button" class="chip-btn" id="btnDur3">3s</button>
-                        <button type="button" class="chip-btn active" id="btnDur6">6s</button>
-                        <button type="button" class="chip-btn" id="btnDur10">10s</button>
                         <button type="button" class="chip-btn" id="btnDurFull">Full Clip</button>
                         <button type="button" class="chip-btn" id="btnResetCut" title="Reset cut range">↺ Reset Cut</button>
                     </div>
                 </div>
 
-                <!-- Resolution Dimensions -->
-                <div class="form-group">
-                    <div class="form-label-row">
-                        <span>Square Dimensions</span>
-                        <span class="form-value-tag" id="valResolution">720 × 720</span>
-                    </div>
-                    <div class="trim-inputs-row">
-                        <div class="input-box">
-                            <span>Width (px)</span>
-                            <input type="number" id="resWidth" class="input-control" value="720" step="10" min="100" max="2048">
-                        </div>
-                        <div class="input-box">
-                            <span>Height (px)</span>
-                            <input type="number" id="resHeight" class="input-control" value="720" step="10" min="100" max="2048">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Frame Rate (FPS) -->
-                <div class="form-group">
-                    <div class="form-label-row">
-                        <span>Frame Rate</span>
-                        <span class="form-value-tag" id="valFps">10 FPS</span>
-                    </div>
-                    <input type="range" id="fpsRange" min="5" max="30" step="1" value="10">
-                    <div style="font-size: 11px; color: var(--text-muted);">
-                        10 FPS matches standard news WebP (like sample file) to keep file size under 1.5MB.
-                    </div>
-                </div>
-
-                <!-- WebP Quality / Compression -->
-                <div class="form-group">
-                    <div class="form-label-row">
-                        <span>Compression Quality</span>
-                        <span class="form-value-tag" id="valQuality">75%</span>
-                    </div>
-                    <input type="range" id="qualityRange" min="10" max="100" step="5" value="75">
-                </div>
-
-                <!-- Editorial Watermark Settings -->
+                <!-- Editorial Watermark Settings (Prominent, Center Only, Increased Size) -->
                 <div class="form-group watermark-form-group">
                     <div class="form-label-row">
                         <div class="watermark-toggle-title">
@@ -312,51 +275,60 @@
 
                     <div id="watermarkConfigPanel" class="watermark-config-panel">
                         <div class="watermark-inputs-row">
-                            <div class="input-box watermark-text-box">
+                            <div class="input-box watermark-text-box" style="flex: 1.4;">
                                 <span>Watermark Text</span>
                                 <input type="text" id="watermarkText" class="input-control" value="GROUND ZERO" maxlength="30" placeholder="e.g. GROUND ZERO">
                             </div>
-                            <div class="input-box">
-                                <span>Position</span>
-                                <select id="watermarkPosition" class="select-control">
-                                    <option value="bottom-right" selected>Bottom-Right (Standard Bug)</option>
-                                    <option value="bottom-left">Bottom-Left</option>
-                                    <option value="top-right">Top-Right</option>
-                                    <option value="top-left">Top-Left</option>
-                                    <option value="center">Center</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="watermark-options-grid">
-                            <div class="input-box">
+                            <div class="input-box" style="flex: 1;">
                                 <span>Watermark Style</span>
                                 <select id="watermarkStyle" class="select-control">
                                     <option value="badge" selected>🔴 Live News Badge</option>
                                     <option value="pill">📰 Dark Editorial Pill</option>
-                                    <option value="shadow">✨ Shadowed Text (No Box)</option>
+                                    <option value="shadow">✨ Shadowed Text</option>
                                 </select>
-                            </div>
-                            <div class="input-box">
-                                <div class="label-with-val">
-                                    <span>Opacity</span>
-                                    <span id="valWatermarkOpacity">85%</span>
-                                </div>
-                                <input type="range" id="watermarkOpacity" min="30" max="100" step="5" value="85">
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Preserved technical controls (hidden to eliminate clutter) -->
+                <div class="hidden" aria-hidden="true">
+                    <input type="hidden" id="watermarkPosition" value="center">
+                    <input type="number" id="trimStart" value="0.0" step="0.1" min="0">
+                    <input type="number" id="trimEnd" value="6.0" step="0.1" min="0.1">
+                    <button type="button" id="btnDur10">10s</button>
+                    <span id="valResolution">640 × 640</span>
+                    <input type="number" id="resWidth" value="640">
+                    <input type="number" id="resHeight" value="640">
+                    <span id="valFps">10 FPS</span>
+                    <input type="range" id="fpsRange" min="5" max="30" step="1" value="10">
+                    <span id="valQuality">65%</span>
+                    <input type="range" id="qualityRange" min="10" max="100" step="5" value="65">
+                    <input type="range" id="watermarkOpacity" min="30" max="100" step="5" value="85">
+                    <span id="valWatermarkOpacity">85%</span>
+                    <div id="presetSocial" data-w="720" data-h="720" data-fps="10" data-q="68" data-dur="6"></div>
                 </div>
 
                 <!-- Real-time Estimation Banner -->
                 <div class="estimation-box card-3d">
                     <div class="est-row">
                         <span class="est-label">Total Animated Frames:</span>
-                        <span class="est-value" id="estFrames">60 frames</span>
+                        <span class="est-value" id="estFrames">60 frames (6.0s @ 10fps)</span>
                     </div>
                     <div class="est-row">
                         <span class="est-label">Estimated Output WebP:</span>
-                        <span class="est-value" id="estSize" style="color: var(--brand-cyan);">~1.1 MB – 1.5 MB</span>
+                        <span class="est-value" id="estSize" style="color: var(--brand-emerald);">~580 KB – 720 KB</span>
+                    </div>
+                    <div class="est-row budget-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span class="est-label" style="font-weight: 600;">Target Budget:</span>
+                            <span class="est-value" id="estBudgetStatus" style="color: var(--brand-emerald); font-weight: 700;">
+                                🎯 500–800 KB Met ✅
+                            </span>
+                        </div>
+                        <button type="button" id="btnAutoTuneBudget" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" title="Reset parameters to 6 sec & 500KB-800KB file size budget">
+                            Auto-Fit 500-800KB
+                        </button>
                     </div>
                 </div>
 
@@ -442,10 +414,406 @@
             </div>
         </section>
 
+        <!-- ================================================================= -->
+        <!-- PHOTO & BATCH WORKSPACES (Shown dynamically on photo load)        -->
+        <!-- ================================================================= -->
+
+        <!-- Image Batch Processing Section (Shown when multiple photos loaded or batch mode active) -->
+        <section id="imageBatchSection" class="batch-section hidden">
+                <div class="batch-header-bar">
+                    <div>
+                        <h2 class="batch-title">📂 News Batch Processing Queue</h2>
+                        <p class="batch-subtitle"><span id="batchCountBadge">0 photos</span> queued for editorial WebP conversion</p>
+                    </div>
+                    <div class="batch-actions-group">
+                        <button id="btnAddMoreBatchPhotos" class="btn btn-secondary btn-sm">➕ Add Photos</button>
+                        <button id="btnClearBatch" class="btn btn-secondary btn-sm">🗑️ Clear Queue</button>
+                        <button id="btnSwitchSingleStudio" class="btn btn-accent btn-sm">✏️ Open in Studio</button>
+                    </div>
+                </div>
+
+                <!-- Batch Global Settings Toolbar -->
+                <div class="batch-toolbar card-clean">
+                    <div class="batch-toolbar-grid">
+                        <div class="input-box">
+                            <span>Batch 1:1 Editorial Preset</span>
+                            <select id="batchPresetSelect" class="select-control">
+                                <option value="1:1-720" selected>📰 1:1 News Teaser (720×720)</option>
+                                <option value="1:1-1080">📱 1:1 Social Feed (1080×1080)</option>
+                                <option value="1:1-480">⚡ 1:1 Mobile Fast (480×480)</option>
+                                <option value="1:1-1200">💎 1:1 HQ Feature (1200×1200)</option>
+                                <option value="1:1-600">📑 1:1 Editorial Grid (600×600)</option>
+                                <option value="1:1-360">👤 1:1 Byline / Micro (360×360)</option>
+                            </select>
+                        </div>
+                        <div class="input-box">
+                            <div class="label-with-val">
+                                <span>Batch Quality</span>
+                                <span id="valBatchQuality">82%</span>
+                            </div>
+                            <input type="range" id="batchQualityRange" min="10" max="100" step="2" value="82">
+                        </div>
+                        <div class="input-box">
+                            <span>Article / Slug Prefix</span>
+                            <input type="text" id="batchSlugPrefix" class="input-control" placeholder="e.g. news_lead_" value="press_article_">
+                        </div>
+                        <div class="input-box" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                            <label class="toggle-switch-label" for="batchEnableWatermark">
+                                <input type="checkbox" id="batchEnableWatermark" checked>
+                                <span class="toggle-switch-slider"></span>
+                                <span class="watermark-title-text" style="font-size: 13px;">Apply Agency Watermark</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="batch-toolbar-bottom">
+                        <button id="btnConvertBatchAll" class="btn btn-primary btn-md">
+                            ⚡ Convert All Photos to WebP
+                        </button>
+                        <button id="btnDownloadBatchZip" class="btn btn-accent btn-md hidden">
+                            📥 Download All as ZIP
+                        </button>
+                        <button id="btnAutoSaveBatchAll" class="btn btn-secondary btn-md hidden">
+                            📁 Save All to files/
+                        </button>
+                        <div class="batch-status-note" id="batchGlobalStatus">Ready to convert</div>
+                    </div>
+                    <!-- Batch progress bar -->
+                    <div id="batchProgressBarWrap" class="progress-bar-wrap hidden" style="margin-top: 12px;">
+                        <div id="batchProgressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Batch Cards Grid -->
+                <div id="batchCardsGrid" class="batch-cards-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- Single Image Editorial Studio Workspace (Hidden until photo loaded) -->
+            <section id="imageStudioSection" class="editorial-studio hidden">
+                
+                <!-- Studio Left: Viewfinder & Crop Stage -->
+                <div class="studio-stage-card">
+                    <div class="stage-topbar">
+                        <div class="file-info-badge">
+                            <span class="file-name-text" id="imgFileName">news_photo.jpg</span>
+                            <span class="meta-pill" id="imgNativeRes">1920×1080</span>
+                            <span class="meta-pill" id="imgNativeSize">2.4 MB</span>
+                            <span class="meta-pill" id="imgNativeFormat">JPEG</span>
+                        </div>
+                        <div class="stage-topbar-actions" style="display: flex; gap: 8px;">
+                            <button id="btnImgRotate" class="btn btn-secondary btn-sm" title="Rotate 90 degrees clockwise">↻ Rotate</button>
+                            <button id="btnChangeImage" class="btn btn-secondary btn-sm">Change Image</button>
+                            <button id="btnBatchFromStudio" class="btn btn-accent btn-sm hidden">📂 Batch View</button>
+                        </div>
+                    </div>
+
+                    <!-- Image + Aspect Ratio Framing Viewfinder -->
+                    <div class="image-viewfinder-wrapper" id="imgViewfinderWrapper">
+                        <img id="imgSourceDisplay" alt="Loaded News Photo Preview">
+                        
+                        <!-- Aspect Ratio Cropping Viewfinder Overlay -->
+                        <div class="crop-overlay-container" id="imgCropOverlayContainer">
+                            <div class="image-crop-guide" id="imgCropGuide" data-label="1:1 Square Editorial">
+                                <!-- Live Viewfinder Watermark Overlay (Centered) -->
+                                <div id="imgViewfinderWatermark" class="viewfinder-watermark-overlay pos-center">
+                                    <span class="watermark-dot"></span>
+                                    <span id="imgViewfinderWatermarkText" class="watermark-text-display">GROUND ZERO</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Framing Alignment Toolbar -->
+                    <div class="framing-controls-row">
+                        <div class="framing-label">
+                            <span>🎯 1:1 Framing Alignment:</span>
+                        </div>
+                        <div class="btn-group" id="imgAlignmentGroup">
+                            <button type="button" id="btnImgAlignStart">Top / Left</button>
+                            <button type="button" id="btnImgAlignCenter" class="active">Center (50%)</button>
+                            <button type="button" id="btnImgAlignEnd">Bottom / Right</button>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            Or drag the 1:1 square guide on the photo!
+                        </div>
+                    </div>
+
+                    <!-- Quick 1:1 Square Resolution Selector Tabs -->
+                    <div class="quick-ratio-toolbar">
+                        <span class="ratio-label">1:1 Square Size:</span>
+                        <div class="ratio-chips-row">
+                            <button type="button" class="ratio-chip-btn active" data-ratio="1:1" data-w="720" data-h="720" id="chipRatio720">720×720 (Std)</button>
+                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="1080" data-h="1080" id="chipRatio1080">1080×1080 (HD)</button>
+                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="480" data-h="480" id="chipRatio480">480×480 (Fast)</button>
+                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="1200" data-h="1200" id="chipRatio1200">1200×1200 (HQ)</button>
+                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="600" data-h="600" id="chipRatio600">600×600 (Grid)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Studio Right: Settings Panel -->
+                <div class="studio-config-card">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            📰 News Website Publishing Settings
+                        </div>
+                    </div>
+
+                    <!-- 1:1 Editorial Ratio Presets -->
+                    <div class="form-group">
+                        <div class="form-label-row">
+                            <span>1:1 Editorial Ratio Presets</span>
+                        </div>
+                        <div class="preset-grid preset-grid-news">
+                            <div class="preset-card active" id="presetImgStandard" data-ratio="1:1" data-w="720" data-h="720" data-q="82">
+                                <span class="preset-badge">Standard</span>
+                                <div class="preset-title">📰 1:1 News Teaser</div>
+                                <div class="preset-meta">720×720 • Standard Web</div>
+                            </div>
+                            <div class="preset-card" id="presetImgSocial" data-ratio="1:1" data-w="1080" data-h="1080" data-q="85">
+                                <div class="preset-title">📱 1:1 Social Feed</div>
+                                <div class="preset-meta">1080×1080 • App / Feed</div>
+                            </div>
+                            <div class="preset-card" id="presetImgFast" data-ratio="1:1" data-w="480" data-h="480" data-q="75">
+                                <div class="preset-title">⚡ 1:1 Mobile Fast</div>
+                                <div class="preset-meta">480×480 • &lt;60KB Ultra Fast</div>
+                            </div>
+                            <div class="preset-card" id="presetImgHQ" data-ratio="1:1" data-w="1200" data-h="1200" data-q="88">
+                                <div class="preset-title">💎 1:1 HQ Feature</div>
+                                <div class="preset-meta">1200×1200 • Retina Press</div>
+                            </div>
+                            <div class="preset-card" id="presetImgGrid" data-ratio="1:1" data-w="600" data-h="600" data-q="80">
+                                <div class="preset-title">📑 1:1 Editorial Grid</div>
+                                <div class="preset-meta">600×600 • Column Archive</div>
+                            </div>
+                            <div class="preset-card" id="presetImgByline" data-ratio="1:1" data-w="360" data-h="360" data-q="75">
+                                <div class="preset-title">👤 1:1 Byline / Micro</div>
+                                <div class="preset-meta">360×360 • Author / Ticker</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Framing Mode: Crop & Fill vs Fit Blurred BG vs Solid Fit -->
+                    <div class="form-group">
+                        <div class="form-label-row">
+                            <span>1:1 Framing Style</span>
+                        </div>
+                        <div class="framing-mode-selector">
+                            <div class="framing-radio-card active" id="imgModeFillCard">
+                                <input type="radio" name="imgFramingMode" id="imgModeFill" value="fill" checked>
+                                <label for="imgModeFill">Crop &amp; Fill 1:1</label>
+                            </div>
+                            <div class="framing-radio-card" id="imgModeBlurCard">
+                                <input type="radio" name="imgFramingMode" id="imgModeBlur" value="blur">
+                                <label for="imgModeBlur">Fit with Blurred BG (1:1)</label>
+                            </div>
+                            <div class="framing-radio-card" id="imgModeSolidCard">
+                                <input type="radio" name="imgFramingMode" id="imgModeSolid" value="solid">
+                                <label for="imgModeSolid">Fit with Dark BG (1:1)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resolution Dimensions & Scaling -->
+                    <div class="form-group">
+                        <div class="form-label-row">
+                            <span>Output Dimensions (1:1 Square)</span>
+                            <span class="form-value-tag" id="valImgResolution">720 × 720</span>
+                        </div>
+                        <div class="trim-inputs-row">
+                            <div class="input-box">
+                                <span>Width (px)</span>
+                                <input type="number" id="imgResWidth" class="input-control" value="720" step="10" min="64" max="4096">
+                            </div>
+                            <div class="input-box">
+                                <span>Height (px)</span>
+                                <input type="number" id="imgResHeight" class="input-control" value="720" step="10" min="64" max="4096">
+                            </div>
+                        </div>
+                        <div class="quick-duration-chips" style="margin-top: 8px;">
+                            <button type="button" class="chip-btn" id="btnScale100">100%</button>
+                            <button type="button" class="chip-btn" id="btnScale75">75%</button>
+                            <button type="button" class="chip-btn" id="btnScale50">50%</button>
+                            <button type="button" class="chip-btn active" id="btnLockAspect" title="1:1 Aspect ratio locked">🔒 1:1 Locked</button>
+                        </div>
+                    </div>
+
+                    <!-- News SEO & Article Headline Slug Auto-Naming -->
+                    <div class="form-group">
+                        <div class="form-label-row">
+                            <span>News SEO Headline Slug</span>
+                            <span class="form-value-tag" id="valImgSlugExt">.webp</span>
+                        </div>
+                        <div class="input-box">
+                            <input type="text" id="imgArticleHeadline" class="input-control" placeholder="Enter headline for Google News SEO slug" value="press_conference_news">
+                            <div class="seo-slug-preview">
+                                <span>SEO Slug: </span>
+                                <code id="imgSlugPreview">press-conference-news_1280x720.webp</code>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <label class="checkbox-label" title="Strip personal camera and geolocation EXIF metadata for embargo compliance">
+                                <input type="checkbox" id="chkStripExif" checked>
+                                <span>Strip EXIF / Camera GPS metadata (Embargo Safe)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- WebP Compression Quality & Lossless Toggle -->
+                    <div class="form-group">
+                        <div class="form-label-row">
+                            <span>WebP Compression Quality</span>
+                            <span class="form-value-tag" id="valImgQuality">82%</span>
+                        </div>
+                        <input type="range" id="imgQualityRange" min="10" max="100" step="2" value="82">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                            <div style="font-size: 11px; color: var(--text-muted);">
+                                80–85% provides crisp newsroom clarity with 80%+ file savings.
+                            </div>
+                            <label class="checkbox-label" title="Lossless WebP provides pixel-perfect encoding for charts, infographics, and graphics" style="margin: 0; font-size: 12px;">
+                                <input type="checkbox" id="chkLosslessWebp">
+                                <span>Lossless WebP</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Editorial Watermark / Stamp Settings -->
+                    <div class="form-group watermark-form-group">
+                        <div class="form-label-row">
+                            <div class="watermark-toggle-title">
+                                <label class="toggle-switch-label" for="enableImgWatermark">
+                                    <input type="checkbox" id="enableImgWatermark" checked>
+                                    <span class="toggle-switch-slider"></span>
+                                    <span class="watermark-title-text">🏷️ Newsroom Watermark &amp; Credit</span>
+                                </label>
+                            </div>
+                            <span class="form-value-tag active-tag" id="valImgWatermarkBadge">GROUND ZERO</span>
+                        </div>
+
+                        <div id="imgWatermarkConfigPanel" class="watermark-config-panel">
+                            <div class="watermark-inputs-row">
+                                <div class="input-box watermark-text-box" style="flex: 1.4;">
+                                    <span>Watermark Text / Credit</span>
+                                    <input type="text" id="imgWatermarkText" class="input-control" value="GROUND ZERO" maxlength="45" placeholder="e.g. GROUND ZERO">
+                                </div>
+                                <div class="input-box" style="flex: 1;">
+                                    <span>Watermark Style</span>
+                                    <select id="imgWatermarkStyle" class="select-control">
+                                        <option value="badge" selected>🔴 Live Breaking News Badge</option>
+                                        <option value="pill">📰 Dark Editorial Glass Pill</option>
+                                        <option value="shadow">✨ Shadowed Text</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="hidden" aria-hidden="true">
+                                <input type="hidden" id="imgWatermarkPosition" value="center">
+                                <span id="valImgWatermarkOpacity">85%</span>
+                                <input type="range" id="imgWatermarkOpacity" min="30" max="100" step="5" value="85">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Real-Time Core Web Vitals & Size Estimation Banner -->
+                    <div class="estimation-box card-3d">
+                        <div class="est-row">
+                            <span class="est-label">Estimated Output Size:</span>
+                            <span class="est-value" id="estImgSize" style="color: var(--brand-cyan);">~120 KB – 180 KB</span>
+                        </div>
+                        <div class="est-row">
+                            <span class="est-label">Core Web Vitals Impact:</span>
+                            <span class="est-value" id="estImgVitals" style="color: var(--brand-emerald);">⚡ Passes LCP (&lt;150ms)</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="btnConvertImage" class="btn-convert">
+                        ⚡ Convert to News WebP
+                    </button>
+                </div>
+            </section>
+
+            <!-- Results & Editorial Comparison Section -->
+            <section id="imageResultsSection" class="results-section hidden">
+                <div class="results-header">
+                    <div>
+                        <div class="results-title">
+                            ✨ News WebP Ready for Publishing
+                        </div>
+                        <div class="auto-save-pill" id="imgAutoSaveStatus">
+                            <span class="auto-save-icon">📁</span>
+                            <span>Auto-Saved to: <strong id="imgAutoSavedPath">files/headline_news.webp</strong></span>
+                            <a id="btnOpenSavedImgFile" href="#" target="_blank" class="auto-save-link" title="Open saved file in browser">Open ↗</a>
+                        </div>
+                    </div>
+                    <div class="results-actions-bar">
+                        <button id="btnNewImage" class="btn btn-accent btn-md pulse-glow" title="Select and convert another photo">
+                            📸 Convert Another Photo
+                        </button>
+                        <button id="btnDownloadImageWebp" class="btn btn-primary btn-md">
+                            📥 Download WebP
+                        </button>
+                        <button id="btnCopyImageClipboard" class="btn btn-secondary btn-md">
+                            📋 Copy WebP
+                        </button>
+                        <button id="btnInspectImageResult" class="btn btn-secondary btn-md">
+                            🔍 Inspect RIFF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Side-by-Side Comparison -->
+                <div class="comparison-grid">
+                    <!-- Source Original Image -->
+                    <div class="preview-box">
+                        <div class="preview-box-header">
+                            <span>Original News Image</span>
+                            <span class="meta-pill" id="origImgSizePill">2.85 MB</span>
+                        </div>
+                        <div class="preview-media-container image-preview-container">
+                            <img id="comparisonImgOriginal" alt="Original News Image Source">
+                        </div>
+                    </div>
+
+                    <!-- Converted WebP Image -->
+                    <div class="preview-box" style="border-color: var(--border-accent);">
+                        <div class="preview-box-header">
+                            <span style="color: var(--brand-cyan);">Optimized WebP for Newsroom CMS</span>
+                            <span class="meta-pill" id="webpImgResultSize" style="background: rgba(16, 185, 129, 0.15); color: var(--brand-emerald); border-color: rgba(16, 185, 129, 0.3);">148 KB</span>
+                        </div>
+                        <div class="preview-media-container image-preview-container">
+                            <img id="comparisonImgWebp" alt="Converted News WebP Preview">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Row -->
+                <div class="metrics-row">
+                    <div class="metric-card success">
+                        <span class="metric-label">Bandwidth Savings</span>
+                        <span class="metric-value" id="metricImgSavings">-94%</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Output Dimensions</span>
+                        <span class="metric-value" id="metricImgRes">1280 × 720 (16:9)</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Google Core Web Vitals</span>
+                        <span class="metric-value" id="metricImgVitals" style="color: var(--brand-emerald);">⚡ Lightning Fast</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">WebP Format Type</span>
+                        <span class="metric-value" id="metricImgFormat">Lossy VP8</span>
+                    </div>
+                </div>
+            </section>
+
     </main>
 
-    <!-- Hidden Offscreen Processing Canvas -->
+    <!-- Hidden Offscreen Processing Canvases -->
     <canvas id="offscreenCanvas" class="hidden"></canvas>
+    <canvas id="imageOffscreenCanvas" class="hidden"></canvas>
 
     <!-- Progress Modal Overlay -->
     <div id="progressOverlay" class="progress-overlay">

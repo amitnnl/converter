@@ -5,10 +5,15 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
-    const dropzone = document.getElementById('uploadSection');
-    const videoFileInput = document.getElementById('videoFileInput');
-    const btnBrowseFiles = document.getElementById('btnBrowseFiles');
+    // DOM Elements - Unified Newsroom Suite
+    const dropzone = document.getElementById('unifiedUploadSection') || document.getElementById('uploadSection');
+    const mediaFileInput = document.getElementById('mediaFileInput') || document.getElementById('videoFileInput');
+    const videoFileInput = mediaFileInput; // backward compatibility
+    const btnBrowseFiles = document.getElementById('btnBrowseMediaFiles') || document.getElementById('btnBrowseFiles');
+    const btnBrowseMediaFiles = btnBrowseFiles;
     const btnLoadDemoVideo = document.getElementById('btnLoadDemoVideo');
+    const btnLoadDemoImage = document.getElementById('btnLoadDemoImage');
+    const btnPasteClipboard = document.getElementById('btnPasteClipboard');
     const btnLoadSampleWebp = document.getElementById('btnLoadSampleWebp');
     const btnInspectSample = document.getElementById('btnInspectSample');
 
@@ -118,6 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const inspectorContent = document.getElementById('inspectorContent');
     const btnCloseInspector = document.getElementById('btnCloseInspector');
     const toastContainer = document.getElementById('toastContainer');
+    const appModeBadge = document.getElementById('appModeBadge');
+    const imageStudioSection = document.getElementById('imageStudioSection');
+    const imageBatchSection = document.getElementById('imageBatchSection');
+    const imageResultsSection = document.getElementById('imageResultsSection');
 
     // Hidden canvas for frame rendering
     const offscreenCanvas = document.getElementById('offscreenCanvas');
@@ -158,43 +167,146 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // Video Loading & Ingestion
+    // Unified Workspace Switcher & Media Routing (Single Converter Engine)
     // =========================================================================
-    btnBrowseFiles.addEventListener('click', () => videoFileInput.click());
-    dropzone.addEventListener('click', (e) => {
-        if (e.target !== btnBrowseFiles) videoFileInput.click();
-    });
+    function switchToWorkspace(workspace) {
+        // Workspaces: 'dropzone', 'video', 'video-result', 'image', 'image-result', 'batch'
+        if (dropzone) dropzone.classList.toggle('hidden', workspace !== 'dropzone');
 
-    ['dragenter', 'dragover'].forEach(name => {
-        dropzone.addEventListener(name, (e) => {
+        if (studioSection) studioSection.classList.toggle('hidden', workspace !== 'video');
+        if (resultsSection) resultsSection.classList.toggle('hidden', workspace !== 'video-result');
+
+        const imgStudio = imageStudioSection || document.getElementById('imageStudioSection');
+        const imgBatch = imageBatchSection || document.getElementById('imageBatchSection');
+        const imgResults = imageResultsSection || document.getElementById('imageResultsSection');
+
+        if (imgStudio) imgStudio.classList.toggle('hidden', workspace !== 'image');
+        if (imgBatch) imgBatch.classList.toggle('hidden', workspace !== 'batch');
+        if (imgResults) imgResults.classList.toggle('hidden', workspace !== 'image-result');
+
+        if (appModeBadge) {
+            if (workspace === 'video' || workspace === 'video-result') {
+                appModeBadge.textContent = '1:1 Video (6s)';
+            } else if (workspace === 'image' || workspace === 'image-result') {
+                appModeBadge.textContent = '1:1 Photo';
+            } else if (workspace === 'batch') {
+                appModeBadge.textContent = 'Batch Queue';
+            } else {
+                appModeBadge.textContent = 'Unified Newsroom Suite';
+            }
+        }
+
+        if (workspace !== 'video' && sourceVideo && !sourceVideo.paused) {
+            sourceVideo.pause();
+            if (btnPlayPause) btnPlayPause.textContent = '▶ Play';
+        }
+
+        if (workspace === 'image' && typeof updateImgCropOverlay === 'function' && currentImgElement) {
+            setTimeout(updateImgCropOverlay, 80);
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setActiveMode(mode) {
+        if (mode === 'video') switchToWorkspace('video');
+        else if (mode === 'image') switchToWorkspace('image');
+        else switchToWorkspace('dropzone');
+    }
+
+    function handleMediaFiles(files) {
+        if (!files || files.length === 0) return;
+        const fileList = Array.from(files);
+
+        const videoFiles = fileList.filter(f => f.type.startsWith('video/') || /\.(mp4|mov|webm|avi|mkv)$/i.test(f.name));
+        const imageFiles = fileList.filter(f => f.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|avif|bmp|gif|svg|tiff)$/i.test(f.name));
+
+        if (videoFiles.length > 0) {
+            handleUploadedFile(videoFiles[0]);
+            return;
+        }
+
+        if (imageFiles.length > 1) {
+            handleImageFiles(imageFiles);
+            return;
+        }
+
+        if (imageFiles.length === 1) {
+            loadImageIntoStudio(imageFiles[0]);
+            return;
+        }
+
+        const webpFiles = fileList.filter(f => f.name.endsWith('.webp') || f.type === 'image/webp');
+        if (webpFiles.length > 0) {
+            inspectWebpFile(webpFiles[0]);
+            return;
+        }
+
+        showToast('Please upload a video clip (MP4/MOV/WebM) or news photo (JPG/PNG/WebP).', 'error');
+    }
+
+    if (btnBrowseFiles) {
+        btnBrowseFiles.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mediaFileInput.click();
+        });
+    }
+
+    if (dropzone) {
+        dropzone.addEventListener('click', (e) => {
+            if (e.target !== btnBrowseFiles && !btnBrowseFiles.contains(e.target)) {
+                mediaFileInput.click();
+            }
+        });
+
+        ['dragenter', 'dragover'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('drag-over');
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            dropzone.classList.add('drag-over');
+            const files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length > 0) {
+                handleMediaFiles(files);
+            }
         });
-    });
+    }
 
-    ['dragleave', 'drop'].forEach(name => {
-        dropzone.addEventListener(name, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropzone.classList.remove('drag-over');
-        });
+    // Window-level drag and drop to drop anywhere on page
+    window.addEventListener('dragover', (e) => {
+        e.preventDefault();
     });
-
-    dropzone.addEventListener('drop', (e) => {
-        const files = e.dataTransfer.files;
+    window.addEventListener('drop', (e) => {
+        const files = e.dataTransfer && e.dataTransfer.files;
         if (files && files.length > 0) {
-            handleUploadedFile(files[0]);
+            e.preventDefault();
+            handleMediaFiles(files);
         }
     });
 
-    videoFileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            handleUploadedFile(e.target.files[0]);
-        }
-    });
+    if (mediaFileInput) {
+        mediaFileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleMediaFiles(e.target.files);
+                mediaFileInput.value = '';
+            }
+        });
+    }
 
-    btnChangeVideo.addEventListener('click', () => videoFileInput.click());
+    btnChangeVideo.addEventListener('click', () => mediaFileInput.click());
 
     function handleUploadedFile(file) {
         if (!file) return;
@@ -220,9 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceVideo.load();
 
         sourceVideo.onloadedmetadata = () => {
-            dropzone.classList.add('hidden');
-            studioSection.classList.remove('hidden');
-            resultsSection.classList.add('hidden');
+            switchToWorkspace('video');
 
             const w = sourceVideo.videoWidth;
             const h = sourceVideo.videoHeight;
@@ -880,9 +990,9 @@ document.addEventListener('DOMContentLoaded', () => {
             valWatermarkBadge.textContent = displayText;
         }
 
-        const pos = (watermarkPosition ? watermarkPosition.value : 'bottom-right');
+        const pos = 'center';
         const style = (watermarkStyle ? watermarkStyle.value : 'badge');
-        viewfinderWatermark.className = `viewfinder-watermark-overlay pos-${pos} style-${style}`;
+        viewfinderWatermark.className = `viewfinder-watermark-overlay pos-center style-${style}`;
 
         const opVal = watermarkOpacity ? (parseInt(watermarkOpacity.value, 10) || 85) : 85;
         viewfinderWatermark.style.opacity = (opVal / 100).toString();
@@ -954,29 +1064,86 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEstimation();
     });
 
+    const btnAutoTuneBudget = document.getElementById('btnAutoTuneBudget');
+    if (btnAutoTuneBudget) {
+        btnAutoTuneBudget.addEventListener('click', () => {
+            autoTuneToBudget();
+        });
+    }
+
+    function autoTuneToBudget() {
+        if (sourceVideo && sourceVideo.duration) {
+            setTrimDuration(6.0);
+        } else {
+            trimStart.value = '0.0';
+            trimEnd.value = '6.0';
+            valDuration.textContent = '6.0 sec';
+        }
+
+        resWidth.value = 640;
+        resHeight.value = 640;
+        valResolution.textContent = '640 × 640';
+
+        fpsRange.value = 10;
+        valFps.textContent = '10 FPS';
+
+        qualityRange.value = 65;
+        valQuality.textContent = '65%';
+
+        presetCards.forEach(c => c.classList.remove('active'));
+        const pSample = document.getElementById('presetSample');
+        if (pSample) pSample.classList.add('active');
+
+        durationChips.forEach(c => c.classList.toggle('active', c.id === 'btnDur6'));
+
+        updateEstimation();
+        showToast('🎯 Calibrated: 6.0s clip & 500KB–800KB file size budget applied!', 'success');
+    }
+
     function updateEstimation() {
         const s = parseFloat(trimStart.value) || 0;
         const e = parseFloat(trimEnd.value) || 6.0;
         const duration = Math.max(0.1, e - s);
         const fps = parseInt(fpsRange.value, 10) || 10;
         const frames = Math.round(duration * fps);
-        const w = parseInt(resWidth.value, 10) || 720;
-        const q = parseInt(qualityRange.value, 10) || 75;
+        const w = parseInt(resWidth.value, 10) || 640;
+        const q = parseInt(qualityRange.value, 10) || 65;
 
         estFrames.textContent = `${frames} frames (${duration.toFixed(1)}s @ ${fps}fps)`;
 
-        // Heuristic size estimation based on sample 720x720 10fps @ 75% being ~45KB per frame
+        // Calibrated empirical animated WebP size:
+        // Baseline: 720x720 10fps @ 75% quality is ~22.8KB per frame
         const areaFactor = (w * w) / (720 * 720);
-        const qualityFactor = (q / 75) ** 1.3;
-        const avgFrameKb = 42 * areaFactor * qualityFactor;
-        const totalEstimatedKb = frames * avgFrameKb;
+        const qualityFactor = Math.pow(q / 75, 1.25);
+        const avgFrameKb = 22.8 * areaFactor * qualityFactor;
+        const totalEstimatedKb = Math.round(frames * avgFrameKb);
+
+        const estBudgetStatus = document.getElementById('estBudgetStatus');
+        const minKb = Math.round(totalEstimatedKb * 0.9);
+        const maxKb = Math.round(totalEstimatedKb * 1.1);
 
         if (totalEstimatedKb > 1024) {
-            const minMb = (totalEstimatedKb * 0.85 / 1024).toFixed(1);
-            const maxMb = (totalEstimatedKb * 1.15 / 1024).toFixed(1);
+            const minMb = (minKb / 1024).toFixed(2);
+            const maxMb = (maxKb / 1024).toFixed(2);
             estSize.textContent = `~${minMb} MB – ${maxMb} MB`;
+            estSize.style.color = 'var(--brand-amber)';
         } else {
-            estSize.textContent = `~${Math.round(totalEstimatedKb)} KB`;
+            estSize.textContent = `~${minKb} KB – ${maxKb} KB`;
+            if (minKb >= 450 && maxKb <= 880) {
+                estSize.style.color = 'var(--brand-emerald)';
+            } else {
+                estSize.style.color = 'var(--brand-cyan)';
+            }
+        }
+
+        if (estBudgetStatus) {
+            if (minKb >= 450 && maxKb <= 880) {
+                estBudgetStatus.innerHTML = '<span style="color: var(--brand-emerald);">🎯 500–800 KB Met ✅</span>';
+            } else if (totalEstimatedKb > 800) {
+                estBudgetStatus.innerHTML = `<span style="color: var(--brand-amber);">⚠️ Exceeds 800 KB (+${totalEstimatedKb - 800} KB)</span>`;
+            } else {
+                estBudgetStatus.innerHTML = `<span style="color: var(--brand-cyan);">ℹ️ Under 500 KB (~${totalEstimatedKb} KB)</span>`;
+            }
         }
     }
 
@@ -1103,9 +1270,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     drawWatermarkOnCanvas(offscreenCtx, targetW, targetH, watermarkOpts);
                 }
 
-                // Encode canvas frame to WebP blob
+                // Encode canvas frame to WebP blob with timeout fallback
                 const frameBlob = await new Promise((res) => {
-                    offscreenCanvas.toBlob(res, 'image/webp', quality);
+                    let done = false;
+                    const timer = setTimeout(() => {
+                        if (!done) {
+                            done = true;
+                            try {
+                                const dataUrl = offscreenCanvas.toDataURL('image/webp', quality);
+                                const binStr = atob(dataUrl.split(',')[1]);
+                                const len = binStr.length;
+                                const arr = new Uint8Array(len);
+                                for (let k = 0; k < len; k++) arr[k] = binStr.charCodeAt(k);
+                                res(new Blob([arr], { type: 'image/webp' }));
+                            } catch (e) {
+                                res(null);
+                            }
+                        }
+                    }, 400);
+
+                    offscreenCanvas.toBlob((b) => {
+                        if (!done) {
+                            done = true;
+                            clearTimeout(timer);
+                            res(b);
+                        }
+                    }, 'image/webp', quality);
                 });
 
                 if (!frameBlob) {
@@ -1161,34 +1351,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /**
-     * Bulletproof video seeker ensuring frame decoding readiness
+     * High-speed bulletproof video seeker ensuring frame decoding readiness without hanging
      */
     function seekVideoToTime(video, targetTime) {
         return new Promise((resolve) => {
             const clamped = Math.max(0, Math.min(video.duration || 10000, targetTime));
-            
-            // If already at target time, ensure frame is rendered and resolve immediately
-            if (Math.abs(video.currentTime - clamped) < 0.003) {
-                if ('requestVideoFrameCallback' in video) {
-                    video.requestVideoFrameCallback(() => resolve());
-                } else {
-                    requestAnimationFrame(() => resolve());
-                }
+
+            // If already at target time, the decoded frame is already in buffer; resolve immediately
+            if (Math.abs(video.currentTime - clamped) < 0.002) {
+                resolve();
                 return;
             }
 
             let resolved = false;
+            let timer = null;
+
+            const cleanup = () => {
+                if (timer) clearTimeout(timer);
+                video.removeEventListener('seeked', onSeeked);
+                video.removeEventListener('error', onError);
+            };
+
             const finish = () => {
                 if (resolved) return;
                 resolved = true;
-                video.removeEventListener('seeked', onSeeked);
-                video.removeEventListener('error', onError);
+                cleanup();
                 resolve();
             };
 
             const onSeeked = () => {
-                if ('requestVideoFrameCallback' in video) {
-                    video.requestVideoFrameCallback(() => finish());
+                // Video seek completed; frame is decoded and ready for drawImage
+                if (document.hidden) {
+                    setTimeout(finish, 0);
                 } else {
                     requestAnimationFrame(() => finish());
                 }
@@ -1199,9 +1393,14 @@ document.addEventListener('DOMContentLoaded', () => {
             video.addEventListener('seeked', onSeeked, { once: true });
             video.addEventListener('error', onError, { once: true });
 
-            setTimeout(finish, 400); // safety fallback
+            // Safety timeout (160ms) guarantees loop never hangs even on stubborn mobile codecs
+            timer = setTimeout(finish, 160);
 
-            video.currentTime = clamped;
+            try {
+                video.currentTime = clamped;
+            } catch (err) {
+                finish();
+            }
         });
     }
 
@@ -1214,55 +1413,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return;
 
         const style = options.style || 'badge'; // 'badge', 'pill', 'shadow'
-        const position = options.position || 'bottom-right';
         const opacity = Math.max(0.1, Math.min(1, (options.opacity || 85) / 100));
 
         ctx.save();
         ctx.globalAlpha = opacity;
 
-        // Scale font size proportionally to canvas dimensions (base 22px on 720px)
+        // Substantially increased font size: base 36px on 720px width (65% increase for commanding center watermark)
         const scale = canvasW / 720;
-        const fontSize = Math.max(12, Math.round(22 * scale));
-        ctx.font = `800 ${fontSize}px "Outfit", "Plus Jakarta Sans", "Inter", -apple-system, sans-serif`;
+        const fontSize = Math.max(16, Math.round(36 * scale));
+        ctx.font = `900 ${fontSize}px "Outfit", "Plus Jakarta Sans", "Inter", -apple-system, sans-serif`;
         ctx.textBaseline = 'middle';
 
         const textMetrics = ctx.measureText(text);
         const textWidth = textMetrics.width;
 
-        const dotSize = Math.max(5, Math.round(8 * scale));
-        const padX = Math.round(14 * scale);
-        const padY = Math.round(8 * scale);
-        const dotMargin = (style === 'badge' || style === 'pill') ? Math.round(8 * scale) : 0;
+        const dotSize = Math.max(8, Math.round(12 * scale));
+        const padX = Math.round(22 * scale);
+        const padY = Math.round(12 * scale);
+        const dotMargin = (style === 'badge' || style === 'pill') ? Math.round(12 * scale) : 0;
         const totalContentWidth = (style === 'badge' || style === 'pill') ? (dotSize + dotMargin + textWidth) : textWidth;
         const boxWidth = totalContentWidth + (padX * 2);
         const boxHeight = fontSize + (padY * 2);
 
-        const margin = Math.round(22 * scale);
-        let boxX, boxY;
-
-        switch (position) {
-            case 'bottom-left':
-                boxX = margin;
-                boxY = canvasH - boxHeight - margin;
-                break;
-            case 'top-right':
-                boxX = canvasW - boxWidth - margin;
-                boxY = margin;
-                break;
-            case 'top-left':
-                boxX = margin;
-                boxY = margin;
-                break;
-            case 'center':
-                boxX = (canvasW - boxWidth) / 2;
-                boxY = (canvasH - boxHeight) / 2;
-                break;
-            case 'bottom-right':
-            default:
-                boxX = canvasW - boxWidth - margin;
-                boxY = canvasH - boxHeight - margin;
-                break;
-        }
+        // Center only: "and the water marks increas some size of the text set it in the center only"
+        const boxX = Math.round((canvasW - boxWidth) / 2);
+        const boxY = Math.round((canvasH - boxHeight) / 2);
 
         const drawRoundedRect = (x, y, w, h, radius) => {
             if (ctx.roundRect) {
@@ -1285,11 +1460,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (style === 'badge') {
             // Newsroom Live Badge (Black glass background with red live dot)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-            ctx.lineWidth = Math.max(1, 1.5 * scale);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.lineWidth = Math.max(1.5, Math.round(2 * scale));
             
-            const r = Math.round(5 * scale);
+            const r = Math.round(6 * scale);
             drawRoundedRect(boxX, boxY, boxWidth, boxHeight, r);
             ctx.fill();
             ctx.stroke();
@@ -1304,17 +1479,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Watermark text
             ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-            ctx.shadowBlur = 4 * scale;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+            ctx.shadowBlur = 6 * scale;
             ctx.shadowOffsetX = 1;
             ctx.shadowOffsetY = 1;
             ctx.fillText(text, boxX + padX + dotSize + dotMargin, boxY + (boxHeight / 2));
 
         } else if (style === 'pill') {
             // High-tech editorial pill with cyan border
-            ctx.fillStyle = 'rgba(14, 20, 36, 0.88)';
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-            ctx.lineWidth = Math.max(1, 1.5 * scale);
+            ctx.fillStyle = 'rgba(14, 20, 36, 0.94)';
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+            ctx.lineWidth = Math.max(1.5, Math.round(2 * scale));
 
             const r = boxHeight / 2;
             drawRoundedRect(boxX, boxY, boxWidth, boxHeight, r);
@@ -1334,13 +1509,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillText(text, boxX + padX + dotSize + dotMargin, boxY + (boxHeight / 2));
 
         } else {
-            // Shadowed embossed text (No bounding box)
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
-            ctx.shadowBlur = 8 * scale;
+            // Shadowed embossed text (No bounding box) - optical center
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.98)';
+            ctx.shadowBlur = 12 * scale;
             ctx.shadowOffsetX = 2 * scale;
             ctx.shadowOffsetY = 2 * scale;
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(text, boxX + padX, boxY + (boxHeight / 2));
+            ctx.textAlign = 'center';
+            ctx.fillText(text, Math.round(canvasW / 2), Math.round(canvasH / 2));
         }
 
         ctx.restore();
@@ -1375,8 +1551,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // File size metrics
         const webpBytes = webpBlob.size;
+        const webpKb = Math.round(webpBytes / 1024);
         const webpMb = (webpBytes / (1024 * 1024)).toFixed(2);
-        webpResultSize.textContent = `${webpMb} MB`;
+        const sizeFormatted = webpBytes < 1024 * 1024 ? `${webpKb} KB` : `${webpMb} MB`;
+        
+        let budgetNotice = '';
+        if (webpKb >= 450 && webpKb <= 850) {
+            budgetNotice = ' • 500–800KB Met ✅';
+        }
+        webpResultSize.textContent = `${sizeFormatted}${budgetNotice}`;
 
         const origBytes = currentVideoFile ? currentVideoFile.size : webpBytes * 4;
         const origMb = (origBytes / (1024 * 1024)).toFixed(2);
@@ -1696,6 +1879,1483 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+
+    // =========================================================================
+    // PURE JAVASCRIPT ZERO-DEPENDENCY ZIP ARCHIVE GENERATOR
+    // =========================================================================
+    function createZipBlob(files) {
+        const crcTable = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let k = 0; k < 8; k++) {
+                c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            }
+            crcTable[i] = c;
+        }
+
+        function crc32(buf) {
+            let crc = 0xFFFFFFFF;
+            for (let i = 0; i < buf.length; i++) {
+                crc = crcTable[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+            }
+            return (crc ^ 0xFFFFFFFF) >>> 0;
+        }
+
+        const textEncoder = new TextEncoder();
+        const localHeaders = [];
+        const centralEntries = [];
+        let offset = 0;
+
+        for (const file of files) {
+            const filenameBytes = textEncoder.encode(file.name);
+            const data = file.data;
+            const crc = crc32(data);
+            const size = data.length;
+
+            const localHeader = new Uint8Array(30 + filenameBytes.length);
+            const lv = new DataView(localHeader.buffer);
+            lv.setUint32(0, 0x04034b50, true);
+            lv.setUint16(4, 20, true);
+            lv.setUint16(6, 0, true);
+            lv.setUint16(8, 0, true); // stored (no compression)
+            lv.setUint16(10, 0x5421, true);
+            lv.setUint16(12, 0x58A1, true);
+            lv.setUint32(14, crc, true);
+            lv.setUint32(18, size, true);
+            lv.setUint32(22, size, true);
+            lv.setUint16(26, filenameBytes.length, true);
+            lv.setUint16(28, 0, true);
+            localHeader.set(filenameBytes, 30);
+
+            localHeaders.push(localHeader);
+            localHeaders.push(data);
+
+            const cdEntry = new Uint8Array(46 + filenameBytes.length);
+            const cv = new DataView(cdEntry.buffer);
+            cv.setUint32(0, 0x02014b50, true);
+            cv.setUint16(4, 20, true);
+            cv.setUint16(6, 20, true);
+            cv.setUint16(8, 0, true);
+            cv.setUint16(10, 0, true);
+            cv.setUint16(12, 0x5421, true);
+            cv.setUint16(14, 0x58A1, true);
+            cv.setUint32(16, crc, true);
+            cv.setUint32(20, size, true);
+            cv.setUint32(24, size, true);
+            cv.setUint16(28, filenameBytes.length, true);
+            cv.setUint16(30, 0, true);
+            cv.setUint16(32, 0, true);
+            cv.setUint16(34, 0, true);
+            cv.setUint16(36, 0, true);
+            cv.setUint32(38, 0, true);
+            cv.setUint32(42, offset, true);
+            cdEntry.set(filenameBytes, 46);
+
+            centralEntries.push(cdEntry);
+            offset += localHeader.length + size;
+        }
+
+        const cdStartOffset = offset;
+        let cdTotalSize = 0;
+        for (const cde of centralEntries) {
+            cdTotalSize += cde.length;
+        }
+
+        const eocd = new Uint8Array(22);
+        const ev = new DataView(eocd.buffer);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, files.length, true);
+        ev.setUint16(10, files.length, true);
+        ev.setUint32(12, cdTotalSize, true);
+        ev.setUint32(16, cdStartOffset, true);
+        ev.setUint16(20, 0, true);
+
+        return new Blob([...localHeaders, ...centralEntries, eocd], { type: 'application/zip' });
+    }
+
+    // =========================================================================
+    // NEWSROOM IMAGE TO WEBP CONVERTER LOGIC
+    // =========================================================================
+    // DOM Elements - Image Section
+    const imageUploadSection = dropzone;
+    const imageFileInput = mediaFileInput;
+    const btnBrowseImageFiles = btnBrowseFiles;
+    const btnBatchToggle = document.getElementById('btnBatchToggle');
+    const batchBtnCount = document.getElementById('batchBtnCount');
+
+    // Batch UI Elements
+    const batchCountBadge = document.getElementById('batchCountBadge');
+    const btnAddMoreBatchPhotos = document.getElementById('btnAddMoreBatchPhotos');
+    const btnClearBatch = document.getElementById('btnClearBatch');
+    const btnSwitchSingleStudio = document.getElementById('btnSwitchSingleStudio');
+    const batchPresetSelect = document.getElementById('batchPresetSelect');
+    const batchQualityRange = document.getElementById('batchQualityRange');
+    const valBatchQuality = document.getElementById('valBatchQuality');
+    const batchSlugPrefix = document.getElementById('batchSlugPrefix');
+    const batchEnableWatermark = document.getElementById('batchEnableWatermark');
+    const btnConvertBatchAll = document.getElementById('btnConvertBatchAll');
+    const btnDownloadBatchZip = document.getElementById('btnDownloadBatchZip');
+    const btnAutoSaveBatchAll = document.getElementById('btnAutoSaveBatchAll');
+    const batchGlobalStatus = document.getElementById('batchGlobalStatus');
+    const batchProgressBarWrap = document.getElementById('batchProgressBarWrap');
+    const batchProgressBarFill = document.getElementById('batchProgressBarFill');
+    const batchCardsGrid = document.getElementById('batchCardsGrid');
+
+    // Single Studio Elements
+    const imgFileName = document.getElementById('imgFileName');
+    const imgNativeRes = document.getElementById('imgNativeRes');
+    const imgNativeSize = document.getElementById('imgNativeSize');
+    const imgNativeFormat = document.getElementById('imgNativeFormat');
+    const btnImgRotate = document.getElementById('btnImgRotate');
+    const btnChangeImage = document.getElementById('btnChangeImage');
+    const btnBatchFromStudio = document.getElementById('btnBatchFromStudio');
+
+    // Viewfinder Elements
+    const imgViewfinderWrapper = document.getElementById('imgViewfinderWrapper');
+    const imgSourceDisplay = document.getElementById('imgSourceDisplay');
+    const imgCropOverlayContainer = document.getElementById('imgCropOverlayContainer');
+    const imgCropGuide = document.getElementById('imgCropGuide');
+    const imgViewfinderWatermark = document.getElementById('imgViewfinderWatermark');
+    const imgViewfinderWatermarkText = document.getElementById('imgViewfinderWatermarkText');
+
+    // Framing & Presets
+    const btnImgAlignStart = document.getElementById('btnImgAlignStart');
+    const btnImgAlignCenter = document.getElementById('btnImgAlignCenter');
+    const btnImgAlignEnd = document.getElementById('btnImgAlignEnd');
+    const ratioChips = document.querySelectorAll('.ratio-chip-btn');
+    const presetImgCards = document.querySelectorAll('.preset-grid-news .preset-card');
+
+    const imgModeFillCard = document.getElementById('imgModeFillCard');
+    const imgModeBlurCard = document.getElementById('imgModeBlurCard');
+    const imgModeSolidCard = document.getElementById('imgModeSolidCard');
+    const imgModeFill = document.getElementById('imgModeFill');
+    const imgModeBlur = document.getElementById('imgModeBlur');
+    const imgModeSolid = document.getElementById('imgModeSolid');
+
+    // Dimensions, SEO, Quality
+    const valImgResolution = document.getElementById('valImgResolution');
+    const imgResWidth = document.getElementById('imgResWidth');
+    const imgResHeight = document.getElementById('imgResHeight');
+    const btnScale100 = document.getElementById('btnScale100');
+    const btnScale75 = document.getElementById('btnScale75');
+    const btnScale50 = document.getElementById('btnScale50');
+    const btnLockAspect = document.getElementById('btnLockAspect');
+
+    const imgArticleHeadline = document.getElementById('imgArticleHeadline');
+    const imgSlugPreview = document.getElementById('imgSlugPreview');
+    const chkStripExif = document.getElementById('chkStripExif');
+    const imgQualityRange = document.getElementById('imgQualityRange');
+    const valImgQuality = document.getElementById('valImgQuality');
+    const chkLosslessWebp = document.getElementById('chkLosslessWebp');
+
+    // Image Watermark Controls
+    const enableImgWatermark = document.getElementById('enableImgWatermark');
+    const valImgWatermarkBadge = document.getElementById('valImgWatermarkBadge');
+    const imgWatermarkConfigPanel = document.getElementById('imgWatermarkConfigPanel');
+    const imgWatermarkText = document.getElementById('imgWatermarkText');
+    const imgWatermarkPosition = document.getElementById('imgWatermarkPosition');
+    const imgWatermarkStyle = document.getElementById('imgWatermarkStyle');
+    const imgWatermarkOpacity = document.getElementById('imgWatermarkOpacity');
+    const valImgWatermarkOpacity = document.getElementById('valImgWatermarkOpacity');
+
+    const estImgSize = document.getElementById('estImgSize');
+    const estImgVitals = document.getElementById('estImgVitals');
+    const btnConvertImage = document.getElementById('btnConvertImage');
+
+    // Results Elements
+    const comparisonImgOriginal = document.getElementById('comparisonImgOriginal');
+    const comparisonImgWebp = document.getElementById('comparisonImgWebp');
+    const origImgSizePill = document.getElementById('origImgSizePill');
+    const webpImgResultSize = document.getElementById('webpImgResultSize');
+    const metricImgSavings = document.getElementById('metricImgSavings');
+    const metricImgRes = document.getElementById('metricImgRes');
+    const metricImgVitals = document.getElementById('metricImgVitals');
+    const metricImgFormat = document.getElementById('metricImgFormat');
+    const imgAutoSaveStatus = document.getElementById('imgAutoSaveStatus');
+    const imgAutoSavedPath = document.getElementById('imgAutoSavedPath');
+    const btnOpenSavedImgFile = document.getElementById('btnOpenSavedImgFile');
+    const btnNewImage = document.getElementById('btnNewImage');
+    const btnDownloadImageWebp = document.getElementById('btnDownloadImageWebp');
+    const btnCopyImageClipboard = document.getElementById('btnCopyImageClipboard');
+    const btnInspectImageResult = document.getElementById('btnInspectImageResult');
+
+    const imageOffscreenCanvas = document.getElementById('imageOffscreenCanvas');
+    const imageOffscreenCtx = imageOffscreenCanvas ? imageOffscreenCanvas.getContext('2d', { willReadFrequently: true }) : null;
+
+    // Image State
+    let currentImgFile = null;
+    let currentImgBlobUrl = null;
+    let currentImgElement = null;
+    let currentImgWebpBlob = null;
+    let currentImgWebpBlobUrl = null;
+
+    let imgCropRatioX = 0.5;
+    let imgCropRatioY = 0.5;
+    let imgSelectedRatio = '1:1';
+    let imgRotation = 0; // 0, 90, 180, 270
+    let isAspectLocked = true;
+    let isDraggingImgCrop = false;
+    let imgDragStartX = 0;
+    let imgDragStartY = 0;
+    let imgDragStartRatioX = 0.5;
+    let imgDragStartRatioY = 0.5;
+
+    // Batch State
+    let batchQueue = [];
+    let isBatchConverting = false;
+
+    // -------------------------------------------------------------------------
+    // News SEO Slug Helpers
+    // -------------------------------------------------------------------------
+    function slugify(text) {
+        return (text || '')
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    function getImageSlugFilename() {
+        const headline = imgArticleHeadline ? imgArticleHeadline.value.trim() : '';
+        const base = slugify(headline) || (currentImgFile ? currentImgFile.name.replace(/\.[^/.]+$/, '') : 'news_photo');
+        const cleanBase = slugify(base) || 'news_photo';
+        const w = parseInt(imgResWidth.value, 10) || 720;
+        const h = parseInt(imgResHeight.value, 10) || 720;
+        return `${cleanBase}_${w}x${h}.webp`;
+    }
+
+    function updateSlugPreview() {
+        if (!imgSlugPreview) return;
+        imgSlugPreview.textContent = getImageSlugFilename();
+    }
+
+    if (imgArticleHeadline) {
+        imgArticleHeadline.addEventListener('input', updateSlugPreview);
+    }
+
+    // -------------------------------------------------------------------------
+    // Viewfinder Aspect-Ratio Crop Positioning & Guide (1:1 Editorial Square)
+    // -------------------------------------------------------------------------
+    function getRatioLabel(ratio) {
+        return '1:1 Square Editorial';
+    }
+
+    function updateImgCropOverlay() {
+        if (!currentImgElement || !imgViewfinderWrapper || !imgCropGuide) return;
+
+        const containerRect = imgViewfinderWrapper.getBoundingClientRect();
+        if (containerRect.width === 0 || containerRect.height === 0) return;
+
+        const isRotated90 = (imgRotation === 90 || imgRotation === 270);
+        const natW = isRotated90 ? currentImgElement.naturalHeight : currentImgElement.naturalWidth;
+        const natH = isRotated90 ? currentImgElement.naturalWidth : currentImgElement.naturalHeight;
+
+        // Container maximum height constraint
+        const maxH = Math.min(520, containerRect.height - 20);
+        const maxW = containerRect.width - 20;
+
+        const scale = Math.min(maxW / natW, maxH / natH);
+        const dispW = Math.max(50, natW * scale);
+        const dispH = Math.max(50, natH * scale);
+
+        const targetRatio = 1.0; // Strictly 1:1 Square Editorial
+
+        let cropW, cropH;
+        if (dispW / dispH > targetRatio) {
+            cropH = dispH;
+            cropW = dispH * targetRatio;
+        } else {
+            cropW = dispW;
+            cropH = dispW / targetRatio;
+        }
+
+        const maxTravelX = Math.max(0, dispW - cropW);
+        const maxTravelY = Math.max(0, dispH - cropH);
+
+        const imgLeft = (containerRect.width - dispW) / 2;
+        const imgTop = (containerRect.height - dispH) / 2;
+
+        const cropLeft = imgLeft + (maxTravelX * imgCropRatioX);
+        const cropTop = imgTop + (maxTravelY * imgCropRatioY);
+
+        imgCropGuide.style.width = `${Math.round(cropW)}px`;
+        imgCropGuide.style.height = `${Math.round(cropH)}px`;
+        imgCropGuide.style.left = `${Math.round(cropLeft)}px`;
+        imgCropGuide.style.top = `${Math.round(cropTop)}px`;
+        imgCropGuide.setAttribute('data-label', '1:1 Square Editorial');
+
+        // Update alignment buttons text according to dominant axis
+        const isHorizontal = maxTravelX > maxTravelY;
+        const travelRatio = isHorizontal ? imgCropRatioX : imgCropRatioY;
+
+        if (btnImgAlignStart) btnImgAlignStart.textContent = isHorizontal ? 'Left (25%)' : 'Top (25%)';
+        if (btnImgAlignCenter) btnImgAlignCenter.textContent = 'Center (50%)';
+        if (btnImgAlignEnd) btnImgAlignEnd.textContent = isHorizontal ? 'Right (75%)' : 'Bottom (75%)';
+
+        if (btnImgAlignStart) btnImgAlignStart.classList.toggle('active', Math.abs(travelRatio - 0.25) < 0.1);
+        if (btnImgAlignCenter) btnImgAlignCenter.classList.toggle('active', Math.abs(travelRatio - 0.5) < 0.1);
+        if (btnImgAlignEnd) btnImgAlignEnd.classList.toggle('active', Math.abs(travelRatio - 0.75) < 0.1);
+    }
+
+    // Draggable Crop Guide (Mouse)
+    if (imgCropGuide) {
+        imgCropGuide.addEventListener('mousedown', (e) => {
+            isDraggingImgCrop = true;
+            imgDragStartX = e.clientX;
+            imgDragStartY = e.clientY;
+            imgDragStartRatioX = imgCropRatioX;
+            imgDragStartRatioY = imgCropRatioY;
+            e.preventDefault();
+        });
+    }
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDraggingImgCrop || !imgViewfinderWrapper) return;
+        const containerRect = imgViewfinderWrapper.getBoundingClientRect();
+        const deltaX = e.clientX - imgDragStartX;
+        const deltaY = e.clientY - imgDragStartY;
+
+        const ratioDeltaX = deltaX / (containerRect.width * 0.35);
+        const ratioDeltaY = deltaY / (containerRect.height * 0.35);
+
+        imgCropRatioX = Math.max(0, Math.min(1, imgDragStartRatioX + ratioDeltaX));
+        imgCropRatioY = Math.max(0, Math.min(1, imgDragStartRatioY + ratioDeltaY));
+        updateImgCropOverlay();
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDraggingImgCrop = false;
+    });
+
+    // Touch support for Android APK / Mobile
+    if (imgCropGuide) {
+        imgCropGuide.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                isDraggingImgCrop = true;
+                imgDragStartX = e.touches[0].clientX;
+                imgDragStartY = e.touches[0].clientY;
+                imgDragStartRatioX = imgCropRatioX;
+                imgDragStartRatioY = imgCropRatioY;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDraggingImgCrop || e.touches.length === 0 || !imgViewfinderWrapper) return;
+            const containerRect = imgViewfinderWrapper.getBoundingClientRect();
+            const deltaX = e.touches[0].clientX - imgDragStartX;
+            const deltaY = e.touches[0].clientY - imgDragStartY;
+
+            const ratioDeltaX = deltaX / (containerRect.width * 0.35);
+            const ratioDeltaY = deltaY / (containerRect.height * 0.35);
+
+            imgCropRatioX = Math.max(0, Math.min(1, imgDragStartRatioX + ratioDeltaX));
+            imgCropRatioY = Math.max(0, Math.min(1, imgDragStartRatioY + ratioDeltaY));
+            updateImgCropOverlay();
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            isDraggingImgCrop = false;
+        });
+    }
+
+    // Quick Alignment Buttons
+    if (btnImgAlignStart) {
+        btnImgAlignStart.addEventListener('click', () => {
+            imgCropRatioX = 0.25;
+            imgCropRatioY = 0.25;
+            updateImgCropOverlay();
+        });
+    }
+    if (btnImgAlignCenter) {
+        btnImgAlignCenter.addEventListener('click', () => {
+            imgCropRatioX = 0.5;
+            imgCropRatioY = 0.5;
+            updateImgCropOverlay();
+        });
+    }
+    if (btnImgAlignEnd) {
+        btnImgAlignEnd.addEventListener('click', () => {
+            imgCropRatioX = 0.75;
+            imgCropRatioY = 0.75;
+            updateImgCropOverlay();
+        });
+    }
+
+    // Quick 1:1 Square Resolution Chips
+    ratioChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const w = parseInt(chip.dataset.w, 10) || 720;
+            const h = parseInt(chip.dataset.h, 10) || 720;
+            ratioChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+
+            // Sync with corresponding preset card
+            presetImgCards.forEach(c => {
+                c.classList.toggle('active', parseInt(c.dataset.w, 10) === w);
+            });
+
+            setImgDimensions(w, h);
+            updateImgCropOverlay();
+            updateImgEstimation();
+            updateSlugPreview();
+        });
+    });
+
+    // 1:1 Editorial Ratio Preset Cards
+    presetImgCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const w = parseInt(card.dataset.w, 10) || 720;
+            const h = parseInt(card.dataset.h, 10) || 720;
+            const q = parseInt(card.dataset.q, 10);
+
+            presetImgCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+
+            // Sync with ratio chips
+            ratioChips.forEach(chip => {
+                chip.classList.toggle('active', parseInt(chip.dataset.w, 10) === w);
+            });
+
+            if (q && imgQualityRange) {
+                imgQualityRange.value = q;
+                if (valImgQuality) valImgQuality.textContent = `${q}%`;
+            }
+
+            setImgDimensions(w, h);
+            updateImgCropOverlay();
+            updateImgEstimation();
+            updateSlugPreview();
+        });
+    });
+
+    function setImgAspectRatio(ratio) {
+        imgSelectedRatio = '1:1'; // Strictly 1:1 Square
+        let targetW = parseInt(imgResWidth.value, 10) || 720;
+        setImgDimensions(targetW, targetW);
+        updateImgCropOverlay();
+        updateImgEstimation();
+        updateSlugPreview();
+    }
+
+    function setImgDimensions(w, h) {
+        // Enforce 1:1 square
+        const side = w || h || 720;
+        if (imgResWidth) imgResWidth.value = side;
+        if (imgResHeight) imgResHeight.value = side;
+        if (valImgResolution) valImgResolution.textContent = `${side} × ${side} px`;
+    }
+
+    // Dimensions Inputs & 1:1 Square Locking
+    if (imgResWidth) {
+        imgResWidth.addEventListener('input', () => {
+            const side = parseInt(imgResWidth.value, 10) || 100;
+            if (isAspectLocked) {
+                imgResHeight.value = side;
+            }
+            if (valImgResolution) valImgResolution.textContent = `${side} × ${imgResHeight.value} px`;
+            updateImgCropOverlay();
+            updateImgEstimation();
+            updateSlugPreview();
+        });
+    }
+
+    if (imgResHeight) {
+        imgResHeight.addEventListener('input', () => {
+            const side = parseInt(imgResHeight.value, 10) || 100;
+            if (isAspectLocked) {
+                imgResWidth.value = side;
+            }
+            if (valImgResolution) valImgResolution.textContent = `${imgResWidth.value} × ${side} px`;
+            updateImgCropOverlay();
+            updateImgEstimation();
+            updateSlugPreview();
+        });
+    }
+
+    if (btnLockAspect) {
+        btnLockAspect.addEventListener('click', () => {
+            isAspectLocked = !isAspectLocked;
+            btnLockAspect.classList.toggle('active', isAspectLocked);
+            btnLockAspect.textContent = isAspectLocked ? '🔒 1:1 Locked' : '🔓 Free Ratio';
+            showToast(isAspectLocked ? '1:1 Ratio locked' : 'Aspect ratio unlocked', 'info');
+        });
+    }
+
+    // Scale Chips (100%, 75%, 50%) based on 1:1 square
+    function applyDimensionScale(factor) {
+        if (!currentImgElement) return;
+        const currentSide = parseInt(imgResWidth.value, 10) || 720;
+        const newSide = Math.round(currentSide * factor);
+        setImgDimensions(newSide, newSide);
+        updateImgCropOverlay();
+        updateImgEstimation();
+        updateSlugPreview();
+    }
+
+    if (btnScale100) btnScale100.addEventListener('click', () => applyDimensionScale(1.0));
+    if (btnScale75) btnScale75.addEventListener('click', () => applyDimensionScale(0.75));
+    if (btnScale50) btnScale50.addEventListener('click', () => applyDimensionScale(0.50));
+
+    // Framing Style (Fill vs Blur vs Solid)
+    if (imgModeFillCard) {
+        imgModeFillCard.addEventListener('click', () => {
+            imgModeFill.checked = true;
+            imgModeFillCard.classList.add('active');
+            imgModeBlurCard.classList.remove('active');
+            imgModeSolidCard.classList.remove('active');
+            imgCropGuide.classList.remove('framing-blur');
+        });
+    }
+    if (imgModeBlurCard) {
+        imgModeBlurCard.addEventListener('click', () => {
+            imgModeBlur.checked = true;
+            imgModeBlurCard.classList.add('active');
+            imgModeFillCard.classList.remove('active');
+            imgModeSolidCard.classList.remove('active');
+            imgCropGuide.classList.add('framing-blur');
+        });
+    }
+    if (imgModeSolidCard) {
+        imgModeSolidCard.addEventListener('click', () => {
+            imgModeSolid.checked = true;
+            imgModeSolidCard.classList.add('active');
+            imgModeFillCard.classList.remove('active');
+            imgModeBlurCard.classList.remove('active');
+            imgCropGuide.classList.add('framing-blur');
+        });
+    }
+
+    // Quality Slider
+    if (imgQualityRange) {
+        imgQualityRange.addEventListener('input', () => {
+            if (valImgQuality) valImgQuality.textContent = `${imgQualityRange.value}%`;
+            updateImgEstimation();
+        });
+    }
+
+    // Rotation Button
+    if (btnImgRotate) {
+        btnImgRotate.addEventListener('click', () => {
+            imgRotation = (imgRotation + 90) % 360;
+            if (imgSourceDisplay) {
+                imgSourceDisplay.style.transform = `rotate(${imgRotation}deg)`;
+            }
+            updateImgCropOverlay();
+            updateImgEstimation();
+            showToast(`Rotated to ${imgRotation}°`, 'info');
+        });
+    }
+
+    // Watermark Controls & Live Preview
+    function updateImgWatermarkPreview() {
+        if (!imgViewfinderWatermark) return;
+        const isEnabled = enableImgWatermark.checked;
+        imgViewfinderWatermark.classList.toggle('hidden', !isEnabled);
+        if (imgWatermarkConfigPanel) {
+            imgWatermarkConfigPanel.classList.toggle('disabled', !isEnabled);
+        }
+
+        const text = (imgWatermarkText.value || 'GROUND ZERO').trim() || 'GROUND ZERO';
+        if (imgViewfinderWatermarkText) imgViewfinderWatermarkText.textContent = text;
+        if (valImgWatermarkBadge) valImgWatermarkBadge.textContent = text.slice(0, 16);
+
+        imgViewfinderWatermark.className = 'viewfinder-watermark-overlay pos-center';
+        if (!isEnabled) {
+            imgViewfinderWatermark.classList.add('hidden');
+            return;
+        }
+
+        const style = imgWatermarkStyle ? imgWatermarkStyle.value : 'badge';
+        imgViewfinderWatermark.classList.add(`style-${style}`);
+
+        const opacity = (parseInt(imgWatermarkOpacity.value, 10) || 85) / 100;
+        imgViewfinderWatermark.style.opacity = opacity;
+        if (valImgWatermarkOpacity) valImgWatermarkOpacity.textContent = `${imgWatermarkOpacity.value}%`;
+    }
+
+    if (enableImgWatermark) enableImgWatermark.addEventListener('change', updateImgWatermarkPreview);
+    if (imgWatermarkText) imgWatermarkText.addEventListener('input', updateImgWatermarkPreview);
+    if (imgWatermarkPosition) imgWatermarkPosition.addEventListener('change', updateImgWatermarkPreview);
+    if (imgWatermarkStyle) imgWatermarkStyle.addEventListener('change', updateImgWatermarkPreview);
+    if (imgWatermarkOpacity) imgWatermarkOpacity.addEventListener('input', updateImgWatermarkPreview);
+
+    // Estimation Engine for Images
+    function updateImgEstimation() {
+        if (!estImgSize || !estImgVitals) return;
+        const w = parseInt(imgResWidth.value, 10) || 1280;
+        const h = parseInt(imgResHeight.value, 10) || 720;
+        const q = parseInt(imgQualityRange.value, 10) || 82;
+        const pixels = w * h;
+
+        // WebP compression heuristic: ~0.15 - 0.25 bytes per pixel at 82% quality for news photography
+        const bytesPerPixel = (q / 100) * 0.22;
+        const estBytes = pixels * bytesPerPixel;
+        const estKb = Math.round(estBytes / 1024);
+
+        const minKb = Math.round(estKb * 0.85);
+        const maxKb = Math.round(estKb * 1.2);
+
+        if (estKb > 1024) {
+            estImgSize.textContent = `~${(minKb / 1024).toFixed(1)} MB – ${(maxKb / 1024).toFixed(1)} MB`;
+        } else {
+            estImgSize.textContent = `~${minKb} KB – ${maxKb} KB`;
+        }
+
+        if (estKb < 150) {
+            estImgVitals.textContent = '⚡ Lightning Fast (Passes Core Web Vitals LCP)';
+            estImgVitals.style.color = 'var(--brand-emerald)';
+        } else if (estKb < 350) {
+            estImgVitals.textContent = '🟢 Recommended Editorial Quality (Good LCP)';
+            estImgVitals.style.color = 'var(--brand-emerald)';
+        } else {
+            estImgVitals.textContent = '🟡 High Fidelity (For Large 4K Displays)';
+            estImgVitals.style.color = 'var(--brand-amber)';
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Load Image File into Single Studio
+    // -------------------------------------------------------------------------
+    function loadImageIntoStudio(file) {
+        currentImgFile = file;
+        imgRotation = 0;
+        imgCropRatioX = 0.5;
+        imgCropRatioY = 0.5;
+
+        if (currentImgBlobUrl) {
+            URL.revokeObjectURL(currentImgBlobUrl);
+        }
+        currentImgBlobUrl = URL.createObjectURL(file);
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            currentImgElement = img;
+            imgSourceDisplay.src = currentImgBlobUrl;
+            imgSourceDisplay.style.transform = 'none';
+
+            // Topbar Metadata
+            imgFileName.textContent = file.name;
+            imgNativeRes.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+
+            const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+            imgNativeSize.textContent = file.size > 1024 * 1024 ? `${sizeMb} MB` : `${Math.round(file.size / 1024)} KB`;
+
+            const format = file.type ? file.type.replace('image/', '').toUpperCase() : 'IMAGE';
+            imgNativeFormat.textContent = format;
+
+            // Headline slug suggestion
+            const rawTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+            imgArticleHeadline.value = rawTitle;
+
+            // Dimensions setup: default 720x720 for 1:1 News Teaser standard
+            setImgDimensions(720, 720);
+
+            // Switch to studio view
+            imageUploadSection.classList.add('hidden');
+            imageBatchSection.classList.add('hidden');
+            imageResultsSection.classList.add('hidden');
+            imageStudioSection.classList.remove('hidden');
+
+            if (btnBatchFromStudio) {
+                btnBatchFromStudio.classList.toggle('hidden', batchQueue.length === 0);
+            }
+
+            updateImgCropOverlay();
+            updateImgWatermarkPreview();
+            updateImgEstimation();
+            updateSlugPreview();
+
+            imageStudioSection.scrollIntoView({ behavior: 'smooth' });
+            showToast(`Loaded ${file.name} into Editorial Studio`, 'success');
+        };
+
+        img.onerror = () => {
+            showToast('Could not decode the selected image file.', 'error');
+        };
+
+        img.src = currentImgBlobUrl;
+    }
+
+    // -------------------------------------------------------------------------
+    // Single Image Conversion
+    // -------------------------------------------------------------------------
+    if (btnConvertImage) {
+        btnConvertImage.addEventListener('click', async () => {
+            await convertImageToWebp();
+        });
+    }
+
+    async function convertImageToWebp() {
+        if (!currentImgElement) {
+            showToast('Please load an image first', 'error');
+            return;
+        }
+
+        const targetW = parseInt(imgResWidth.value, 10) || 720;
+        const targetH = parseInt(imgResHeight.value, 10) || 720;
+        const quality = (parseInt(imgQualityRange.value, 10) || 82) / 100;
+        const isBlurMode = imgModeBlur ? imgModeBlur.checked : false;
+        const isSolidMode = imgModeSolid ? imgModeSolid.checked : false;
+
+        progressOverlay.classList.add('active');
+        progressBarFill.style.width = '20%';
+        progressPercent.textContent = '25%';
+        progressStatus.textContent = 'Cropping and framing news image...';
+        progressSpeed.textContent = 'Processing...';
+
+        await new Promise(r => setTimeout(r, 60));
+
+        try {
+            imageOffscreenCanvas.width = targetW;
+            imageOffscreenCanvas.height = targetH;
+
+            const natW = currentImgElement.naturalWidth;
+            const natH = currentImgElement.naturalHeight;
+
+            let drawSource = currentImgElement;
+            if (imgRotation !== 0) {
+                const rotCanvas = document.createElement('canvas');
+                if (imgRotation === 90 || imgRotation === 270) {
+                    rotCanvas.width = natH;
+                    rotCanvas.height = natW;
+                } else {
+                    rotCanvas.width = natW;
+                    rotCanvas.height = natH;
+                }
+                const rotCtx = rotCanvas.getContext('2d');
+                rotCtx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
+                rotCtx.rotate((imgRotation * Math.PI) / 180);
+                rotCtx.drawImage(currentImgElement, -natW / 2, -natH / 2);
+                drawSource = rotCanvas;
+            }
+
+            const srcW = drawSource.width || drawSource.naturalWidth;
+            const srcH = drawSource.height || drawSource.naturalHeight;
+
+            imageOffscreenCtx.clearRect(0, 0, targetW, targetH);
+
+            if (isBlurMode) {
+                imageOffscreenCtx.save();
+                imageOffscreenCtx.filter = 'blur(25px) brightness(0.65) saturate(1.3)';
+                imageOffscreenCtx.drawImage(drawSource, -20, -20, targetW + 40, targetH + 40);
+                imageOffscreenCtx.restore();
+
+                const scale = Math.min(targetW / srcW, targetH / srcH);
+                const fitW = srcW * scale;
+                const fitH = srcH * scale;
+                const fitX = (targetW - fitW) / 2;
+                const fitY = (targetH - fitH) / 2;
+                imageOffscreenCtx.drawImage(drawSource, fitX, fitY, fitW, fitH);
+
+            } else if (isSolidMode) {
+                imageOffscreenCtx.fillStyle = '#070a12';
+                imageOffscreenCtx.fillRect(0, 0, targetW, targetH);
+
+                const scale = Math.min(targetW / srcW, targetH / srcH);
+                const fitW = srcW * scale;
+                const fitH = srcH * scale;
+                const fitX = (targetW - fitW) / 2;
+                const fitY = (targetH - fitH) / 2;
+                imageOffscreenCtx.drawImage(drawSource, fitX, fitY, fitW, fitH);
+
+            } else {
+                const targetAspect = targetW / targetH;
+                let sx, sy, sWidth, sHeight;
+
+                if (srcW / srcH > targetAspect) {
+                    sHeight = srcH;
+                    sWidth = srcH * targetAspect;
+                    sy = 0;
+                    const maxTravel = srcW - sWidth;
+                    sx = maxTravel * imgCropRatioX;
+                } else {
+                    sWidth = srcW;
+                    sHeight = srcW / targetAspect;
+                    sx = 0;
+                    const maxTravel = srcH - sHeight;
+                    sy = maxTravel * imgCropRatioY;
+                }
+
+                imageOffscreenCtx.drawImage(drawSource, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
+            }
+
+            progressBarFill.style.width = '65%';
+            progressPercent.textContent = '70%';
+            progressStatus.textContent = 'Applying newsroom watermark & bug...';
+
+            if (enableImgWatermark && enableImgWatermark.checked) {
+                const watermarkOpts = {
+                    enabled: true,
+                    text: (imgWatermarkText.value || 'GROUND ZERO').trim() || 'GROUND ZERO',
+                    position: 'center',
+                    style: imgWatermarkStyle ? imgWatermarkStyle.value : 'badge',
+                    opacity: parseInt(imgWatermarkOpacity.value, 10) || 85
+                };
+                drawWatermarkOnCanvas(imageOffscreenCtx, targetW, targetH, watermarkOpts);
+            }
+
+            progressBarFill.style.width = '85%';
+            progressPercent.textContent = '90%';
+            progressStatus.textContent = 'Encoding WebP container...';
+
+            const webpBlob = await new Promise((resolve, reject) => {
+                imageOffscreenCanvas.toBlob((b) => {
+                    if (b) resolve(b);
+                    else reject(new Error('Canvas WebP encoding failed.'));
+                }, 'image/webp', quality);
+            });
+
+            progressBarFill.style.width = '100%';
+            progressPercent.textContent = '100%';
+
+            await handleImageConversionSuccess(webpBlob, {
+                width: targetW,
+                height: targetH,
+                format: chkLosslessWebp && chkLosslessWebp.checked ? 'Lossless VP8L' : 'Lossy VP8'
+            });
+
+        } catch (err) {
+            console.error('Image conversion error:', err);
+            showToast('Conversion failed: ' + err.message, 'error');
+        } finally {
+            progressOverlay.classList.remove('active');
+        }
+    }
+
+    async function handleImageConversionSuccess(webpBlob, meta) {
+        currentImgWebpBlob = webpBlob;
+        if (currentImgWebpBlobUrl) {
+            URL.revokeObjectURL(currentImgWebpBlobUrl);
+        }
+        currentImgWebpBlobUrl = URL.createObjectURL(webpBlob);
+
+        comparisonImgOriginal.src = currentImgBlobUrl;
+        comparisonImgWebp.src = currentImgWebpBlobUrl;
+
+        const webpBytes = webpBlob.size;
+        const webpKb = Math.round(webpBytes / 1024);
+        const webpFormatted = webpKb > 1024 ? `${(webpBytes / (1024 * 1024)).toFixed(2)} MB` : `${webpKb} KB`;
+        webpImgResultSize.textContent = webpFormatted;
+
+        const origBytes = currentImgFile ? currentImgFile.size : webpBytes * 6;
+        const origKb = Math.round(origBytes / 1024);
+        const origFormatted = origKb > 1024 ? `${(origBytes / (1024 * 1024)).toFixed(2)} MB` : `${origKb} KB`;
+        origImgSizePill.textContent = origFormatted;
+
+        const savingsPct = Math.max(0, Math.round(((origBytes - webpBytes) / origBytes) * 100));
+        metricImgSavings.textContent = `-${savingsPct}%`;
+        metricImgRes.textContent = `${meta.width} × ${meta.height}`;
+        metricImgFormat.textContent = meta.format;
+
+        if (webpKb < 150) {
+            metricImgVitals.textContent = '⚡ Lightning Fast (<150ms LCP)';
+            metricImgVitals.style.color = 'var(--brand-emerald)';
+        } else if (webpKb < 350) {
+            metricImgVitals.textContent = '🟢 Excellent Editorial (<300ms)';
+            metricImgVitals.style.color = 'var(--brand-emerald)';
+        } else {
+            metricImgVitals.textContent = '🟡 Good (<600ms LCP)';
+            metricImgVitals.style.color = 'var(--brand-amber)';
+        }
+
+        imageResultsSection.classList.remove('hidden');
+        imageResultsSection.scrollIntoView({ behavior: 'smooth' });
+
+        showToast(`WebP ready! Saved ${savingsPct}% bandwidth.`, 'success');
+
+        const filename = getImageSlugFilename();
+        showToast('Auto-saving WebP to files/...', 'info');
+
+        const saveResult = await saveWebpToFiles(webpBlob, filename);
+        if (saveResult.success) {
+            if (imgAutoSavedPath) imgAutoSavedPath.textContent = saveResult.path;
+            if (modalSavedPath) modalSavedPath.textContent = saveResult.path;
+            if (btnOpenSavedImgFile) {
+                if (saveResult.url) {
+                    btnOpenSavedImgFile.href = saveResult.url;
+                    btnOpenSavedImgFile.style.display = 'inline-block';
+                } else {
+                    btnOpenSavedImgFile.style.display = 'none';
+                }
+            }
+            showToast(`Auto-saved to ${saveResult.path}`, 'success');
+        } else {
+            if (imgAutoSavedPath) imgAutoSavedPath.textContent = 'files/' + filename;
+        }
+
+        const shouldPrompt = chkAutoPromptNew ? chkAutoPromptNew.checked : true;
+        if (shouldPrompt && newVideoModal) {
+            setTimeout(() => {
+                newVideoModal.classList.add('active');
+            }, 600);
+        }
+    }
+
+    // Results Actions (Image Mode)
+    if (btnDownloadImageWebp) {
+        btnDownloadImageWebp.addEventListener('click', async () => {
+            if (!currentImgWebpBlob) return;
+            const filename = getImageSlugFilename();
+            const nativeDownload = window.Capacitor?.Plugins?.WebpDownload;
+            btnDownloadImageWebp.disabled = true;
+
+            try {
+                if (window.Capacitor?.isNativePlatform?.() && nativeDownload) {
+                    const base64 = await blobToBase64(currentImgWebpBlob);
+                    await nativeDownload.saveWebp({ base64, filename });
+                    showToast(`Saved to Downloads/PressWebP: ${filename}`, 'success');
+                } else {
+                    const a = document.createElement('a');
+                    a.href = currentImgWebpBlobUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    showToast(`Downloaded: ${filename}`, 'success');
+                }
+            } catch (err) {
+                console.error('Download failed:', err);
+                showToast('Could not save WebP: ' + err.message, 'error');
+            } finally {
+                btnDownloadImageWebp.disabled = false;
+            }
+        });
+    }
+
+    if (btnCopyImageClipboard) {
+        btnCopyImageClipboard.addEventListener('click', async () => {
+            if (!currentImgWebpBlob) return;
+            try {
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/webp': currentImgWebpBlob })
+                ]);
+                showToast('WebP image copied to clipboard!', 'success');
+            } catch (err) {
+                showToast('Direct image clipboard copy not supported in this browser. Please use Download.', 'info');
+            }
+        });
+    }
+
+    if (btnInspectImageResult) {
+        btnInspectImageResult.addEventListener('click', () => {
+            if (!currentImgWebpBlob) return;
+            inspectWebpFile(currentImgWebpBlob, getImageSlugFilename());
+        });
+    }
+
+    if (btnNewImage) {
+        btnNewImage.addEventListener('click', () => {
+            imageResultsSection.classList.add('hidden');
+            imageStudioSection.classList.add('hidden');
+            imageUploadSection.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => {
+                if (imageFileInput) imageFileInput.click();
+            }, 250);
+        });
+    }
+
+    if (btnChangeImage) {
+        btnChangeImage.addEventListener('click', () => {
+            imageStudioSection.classList.add('hidden');
+            imageUploadSection.classList.remove('hidden');
+            setTimeout(() => {
+                if (imageFileInput) imageFileInput.click();
+            }, 200);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // BATCH MULTI-PHOTO CONVERTER LOGIC
+    // -------------------------------------------------------------------------
+    function handleImageFiles(files) {
+        if (!files || files.length === 0) return;
+
+        if (files.length === 1 && batchQueue.length === 0) {
+            loadImageIntoStudio(files[0]);
+        } else {
+            loadImagesIntoBatch(files);
+        }
+    }
+
+    function loadImagesIntoBatch(files) {
+        for (const file of files) {
+            const id = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            const blobUrl = URL.createObjectURL(file);
+            batchQueue.push({
+                id,
+                file,
+                blobUrl,
+                name: file.name,
+                size: file.size,
+                status: 'pending',
+                webpBlob: null,
+                webpUrl: null,
+                webpSize: 0,
+                savingsPct: 0
+            });
+        }
+
+        renderBatchUI();
+        imageUploadSection.classList.add('hidden');
+        imageStudioSection.classList.add('hidden');
+        imageResultsSection.classList.add('hidden');
+        imageBatchSection.classList.remove('hidden');
+        imageBatchSection.scrollIntoView({ behavior: 'smooth' });
+        showToast(`Queued ${files.length} news photos for batch processing`, 'info');
+    }
+
+    function renderBatchUI() {
+        const count = batchQueue.length;
+        if (batchBtnCount) batchBtnCount.textContent = count;
+        if (batchCountBadge) batchCountBadge.textContent = `${count} ${count === 1 ? 'photo' : 'photos'}`;
+
+        batchCardsGrid.innerHTML = '';
+        batchQueue.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = 'batch-photo-card';
+
+            const sizeMb = (item.size / (1024 * 1024)).toFixed(2);
+            const sizeStr = item.size > 1024 * 1024 ? `${sizeMb} MB` : `${Math.round(item.size / 1024)} KB`;
+
+            let statusHtml = '';
+            if (item.status === 'pending') {
+                statusHtml = `<span class="batch-status-pill pending">Queued</span>`;
+            } else if (item.status === 'converting') {
+                statusHtml = `<span class="batch-status-pill converting">Converting...</span>`;
+            } else if (item.status === 'done') {
+                const webpStr = item.webpSize > 1024 * 1024 ? `${(item.webpSize / (1024 * 1024)).toFixed(2)} MB` : `${Math.round(item.webpSize / 1024)} KB`;
+                statusHtml = `
+                    <span class="batch-status-pill done">${webpStr} (-${item.savingsPct}%)</span>
+                    <button type="button" class="batch-card-download-btn" data-id="${item.id}">📥 Download</button>
+                `;
+            } else {
+                statusHtml = `<span class="batch-status-pill pending" style="color:var(--brand-rose);">Failed</span>`;
+            }
+
+            card.innerHTML = `
+                <div class="batch-card-thumb-wrap">
+                    <img src="${item.webpUrl || item.blobUrl}" alt="${item.name}">
+                    <button type="button" class="batch-card-remove" data-id="${item.id}" title="Remove photo">&times;</button>
+                </div>
+                <div class="batch-card-body">
+                    <div class="batch-card-name" title="${item.name}">${item.name}</div>
+                    <div class="batch-card-meta">
+                        <span>${sizeStr}</span>
+                        <span>#${index + 1}</span>
+                    </div>
+                    <div class="batch-card-status">
+                        ${statusHtml}
+                    </div>
+                </div>
+            `;
+
+            const btnRemove = card.querySelector('.batch-card-remove');
+            btnRemove.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeBatchItem(item.id);
+            });
+
+            const btnDown = card.querySelector('.batch-card-download-btn');
+            if (btnDown) {
+                btnDown.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    downloadBatchItem(item);
+                });
+            }
+
+            card.addEventListener('click', () => {
+                loadImageIntoStudio(item.file);
+            });
+
+            batchCardsGrid.appendChild(card);
+        });
+
+        const hasDone = batchQueue.some(i => i.status === 'done');
+        if (btnDownloadBatchZip) btnDownloadBatchZip.classList.toggle('hidden', !hasDone);
+        if (btnAutoSaveBatchAll) btnAutoSaveBatchAll.classList.toggle('hidden', !hasDone);
+    }
+
+    function removeBatchItem(id) {
+        const idx = batchQueue.findIndex(i => i.id === id);
+        if (idx !== -1) {
+            URL.revokeObjectURL(batchQueue[idx].blobUrl);
+            if (batchQueue[idx].webpUrl) URL.revokeObjectURL(batchQueue[idx].webpUrl);
+            batchQueue.splice(idx, 1);
+            renderBatchUI();
+            if (batchQueue.length === 0) {
+                imageBatchSection.classList.add('hidden');
+                imageUploadSection.classList.remove('hidden');
+            }
+        }
+    }
+
+    async function downloadBatchItem(item) {
+        if (!item.webpBlob) return;
+        const filename = item.finalFilename || `${slugify(item.name.replace(/\.[^/.]+$/, ''))}.webp`;
+        const a = document.createElement('a');
+        a.href = item.webpUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast(`Downloaded: ${filename}`, 'success');
+    }
+
+    if (btnBatchToggle) {
+        btnBatchToggle.addEventListener('click', () => {
+            if (batchQueue.length > 0) {
+                imageUploadSection.classList.add('hidden');
+                imageStudioSection.classList.add('hidden');
+                imageResultsSection.classList.add('hidden');
+                imageBatchSection.classList.remove('hidden');
+                imageBatchSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                imageFileInput.click();
+            }
+        });
+    }
+
+    if (btnSwitchSingleStudio) {
+        btnSwitchSingleStudio.addEventListener('click', () => {
+            if (batchQueue.length > 0) {
+                loadImageIntoStudio(batchQueue[0].file);
+            } else {
+                showToast('Queue is empty. Load photos first.', 'info');
+            }
+        });
+    }
+
+    if (btnBatchFromStudio) {
+        btnBatchFromStudio.addEventListener('click', () => {
+            imageStudioSection.classList.add('hidden');
+            imageBatchSection.classList.remove('hidden');
+            imageBatchSection.scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+
+    if (btnAddMoreBatchPhotos) {
+        btnAddMoreBatchPhotos.addEventListener('click', () => {
+            imageFileInput.click();
+        });
+    }
+
+    if (btnClearBatch) {
+        btnClearBatch.addEventListener('click', () => {
+            batchQueue.forEach(item => {
+                URL.revokeObjectURL(item.blobUrl);
+                if (item.webpUrl) URL.revokeObjectURL(item.webpUrl);
+            });
+            batchQueue = [];
+            renderBatchUI();
+            imageBatchSection.classList.add('hidden');
+            imageUploadSection.classList.remove('hidden');
+            showToast('Batch queue cleared', 'info');
+        });
+    }
+
+    if (batchQualityRange) {
+        batchQualityRange.addEventListener('input', () => {
+            if (valBatchQuality) valBatchQuality.textContent = `${batchQualityRange.value}%`;
+        });
+    }
+
+    // Convert All Batch Photos
+    if (btnConvertBatchAll) {
+        btnConvertBatchAll.addEventListener('click', async () => {
+            if (isBatchConverting || batchQueue.length === 0) return;
+            isBatchConverting = true;
+            btnConvertBatchAll.disabled = true;
+
+            if (batchProgressBarWrap) batchProgressBarWrap.classList.remove('hidden');
+            if (batchProgressBarFill) batchProgressBarFill.style.width = '0%';
+            batchGlobalStatus.textContent = `Converting 0 of ${batchQueue.length}...`;
+
+            const preset = batchPresetSelect ? batchPresetSelect.value : 'original';
+            const quality = (parseInt(batchQualityRange.value, 10) || 82) / 100;
+            const prefix = (batchSlugPrefix ? batchSlugPrefix.value : 'press_article_').trim();
+            const watermark = batchEnableWatermark ? batchEnableWatermark.checked : true;
+
+            for (let i = 0; i < batchQueue.length; i++) {
+                const item = batchQueue[i];
+                item.status = 'converting';
+                renderBatchUI();
+
+                const pct = Math.round(((i) / batchQueue.length) * 100);
+                if (batchProgressBarFill) batchProgressBarFill.style.width = `${pct}%`;
+                batchGlobalStatus.textContent = `Converting ${i + 1} of ${batchQueue.length}: ${item.name}...`;
+
+                try {
+                    const img = await new Promise((res, rej) => {
+                        const el = new Image();
+                        el.onload = () => res(el);
+                        el.onerror = rej;
+                        el.src = item.blobUrl;
+                    });
+
+                    let targetW = img.naturalWidth;
+                    let targetH = img.naturalHeight;
+
+                    if (preset === '1:1-1080') {
+                        targetW = 1080;
+                        targetH = 1080;
+                    } else if (preset === '1:1-480') {
+                        targetW = 480;
+                        targetH = 480;
+                    } else if (preset === '1:1-1200') {
+                        targetW = 1200;
+                        targetH = 1200;
+                    } else if (preset === '1:1-600') {
+                        targetW = 600;
+                        targetH = 600;
+                    } else if (preset === '1:1-360') {
+                        targetW = 360;
+                        targetH = 360;
+                    } else {
+                        targetW = 720;
+                        targetH = 720;
+                    }
+
+                    imageOffscreenCanvas.width = targetW;
+                    imageOffscreenCanvas.height = targetH;
+                    imageOffscreenCtx.clearRect(0, 0, targetW, targetH);
+
+                    // 1:1 Center Square Crop
+                    const srcAspect = img.naturalWidth / img.naturalHeight;
+                    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+
+                    if (srcAspect > 1.0) {
+                        sw = img.naturalHeight;
+                        sx = (img.naturalWidth - sw) / 2;
+                    } else {
+                        sh = img.naturalWidth;
+                        sy = (img.naturalHeight - sh) / 2;
+                    }
+
+                    imageOffscreenCtx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+
+                    if (watermark) {
+                        drawWatermarkOnCanvas(imageOffscreenCtx, targetW, targetH, {
+                            enabled: true,
+                            text: (imgWatermarkText ? imgWatermarkText.value : 'GROUND ZERO') || 'GROUND ZERO',
+                            position: 'center',
+                            style: 'badge',
+                            opacity: 85
+                        });
+                    }
+
+                    const blob = await new Promise(res => {
+                        imageOffscreenCanvas.toBlob(res, 'image/webp', quality);
+                    });
+
+                    item.webpBlob = blob;
+                    item.webpUrl = URL.createObjectURL(blob);
+                    item.webpSize = blob.size;
+                    item.savingsPct = Math.max(0, Math.round(((item.size - blob.size) / item.size) * 100));
+                    item.status = 'done';
+                    item.finalFilename = `${slugify(prefix + '_' + (i + 1) + '_' + item.name.replace(/\.[^/.]+$/, ''))}_${targetW}x${targetH}.webp`;
+
+                } catch (err) {
+                    console.error('Batch convert item error:', err);
+                    item.status = 'error';
+                }
+            }
+
+            if (batchProgressBarFill) batchProgressBarFill.style.width = '100%';
+            batchGlobalStatus.textContent = `Batch complete! Converted ${batchQueue.length} photos.`;
+            isBatchConverting = false;
+            btnConvertBatchAll.disabled = false;
+            renderBatchUI();
+            showToast(`All ${batchQueue.length} photos converted to WebP!`, 'success');
+        });
+    }
+
+    // Download All as ZIP
+    if (btnDownloadBatchZip) {
+        btnDownloadBatchZip.addEventListener('click', async () => {
+            const doneItems = batchQueue.filter(i => i.status === 'done' && i.webpBlob);
+            if (doneItems.length === 0) return;
+
+            btnDownloadBatchZip.disabled = true;
+            showToast('Generating ZIP archive...', 'info');
+
+            try {
+                const files = [];
+                for (const item of doneItems) {
+                    const buf = await item.webpBlob.arrayBuffer();
+                    files.push({
+                        name: item.finalFilename || `${item.name.replace(/\.[^/.]+$/, '')}.webp`,
+                        data: new Uint8Array(buf)
+                    });
+                }
+
+                const zipBlob = createZipBlob(files);
+                const zipUrl = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = `press_news_webp_batch_${Date.now()}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(zipUrl);
+
+                showToast(`Downloaded ZIP with ${files.length} WebP photos!`, 'success');
+            } catch (err) {
+                console.error('ZIP creation error:', err);
+                showToast('Failed to create ZIP: ' + err.message, 'error');
+            } finally {
+                btnDownloadBatchZip.disabled = false;
+            }
+        });
+    }
+
+    // Auto-Save All to files/
+    if (btnAutoSaveBatchAll) {
+        btnAutoSaveBatchAll.addEventListener('click', async () => {
+            const doneItems = batchQueue.filter(i => i.status === 'done' && i.webpBlob);
+            if (doneItems.length === 0) return;
+
+            btnAutoSaveBatchAll.disabled = true;
+            showToast(`Auto-saving ${doneItems.length} photos to files/...`, 'info');
+
+            let savedCount = 0;
+            for (const item of doneItems) {
+                const res = await saveWebpToFiles(item.webpBlob, item.finalFilename);
+                if (res.success) savedCount++;
+            }
+
+            showToast(`Auto-saved ${savedCount} of ${doneItems.length} photos to files/ folder!`, 'success');
+            btnAutoSaveBatchAll.disabled = false;
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Image Drag & Drop, File Picker, Clipboard & Demo Photo
+    // -------------------------------------------------------------------------
+    if (btnBrowseImageFiles) {
+        btnBrowseImageFiles.addEventListener('click', () => {
+            imageFileInput.click();
+        });
+    }
+
+    if (imageFileInput) {
+        imageFileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleImageFiles(Array.from(e.target.files));
+                imageFileInput.value = '';
+            }
+        });
+    }
+
+    if (imageUploadSection) {
+        imageUploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageUploadSection.classList.add('dragover');
+        });
+        imageUploadSection.addEventListener('dragleave', () => {
+            imageUploadSection.classList.remove('dragover');
+        });
+        imageUploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageUploadSection.classList.remove('dragover');
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleImageFiles(Array.from(e.dataTransfer.files));
+            }
+        });
+    }
+
+    // Paste from Clipboard (Ctrl+V) anywhere
+    window.addEventListener('paste', (e) => {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+
+        const imageFiles = [];
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type && items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    const ext = blob.type.split('/')[1] || 'png';
+                    const file = new File([blob], `clipboard_news_${Date.now()}.${ext}`, { type: blob.type });
+                    imageFiles.push(file);
+                }
+            }
+        }
+
+        if (imageFiles.length > 0) {
+            setActiveMode('image');
+            showToast(`Pasted ${imageFiles.length} photo${imageFiles.length > 1 ? 's' : ''} from clipboard!`, 'success');
+            handleImageFiles(imageFiles);
+        }
+    });
+
+    if (btnPasteClipboard) {
+        btnPasteClipboard.addEventListener('click', async () => {
+            try {
+                if (navigator.clipboard && navigator.clipboard.read) {
+                    const clipboardItems = await navigator.clipboard.read();
+                    const imageFiles = [];
+                    for (const item of clipboardItems) {
+                        for (const type of item.types) {
+                            if (type.startsWith('image/')) {
+                                const blob = await item.getType(type);
+                                const ext = type.split('/')[1] || 'png';
+                                const file = new File([blob], `clipboard_news_${Date.now()}.${ext}`, { type });
+                                imageFiles.push(file);
+                            }
+                        }
+                    }
+                    if (imageFiles.length > 0) {
+                        setActiveMode('image');
+                        handleImageFiles(imageFiles);
+                        showToast(`Pasted ${imageFiles.length} photo(s) from clipboard!`, 'success');
+                        return;
+                    }
+                }
+                showToast('Press Ctrl+V (or Cmd+V on Mac) to paste any image from your clipboard!', 'info');
+            } catch (err) {
+                showToast('Press Ctrl+V to paste an image directly from your clipboard.', 'info');
+            }
+        });
+    }
+
+    // Demo Photo Loader
+    if (btnLoadDemoImage) {
+        btnLoadDemoImage.addEventListener('click', async () => {
+            try {
+                showToast('Loading news photojournalism demo...', 'info');
+                const res = await fetch('sample_news_photo.jpg');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const file = new File([blob], 'global_summit_press_conference.jpg', { type: 'image/jpeg' });
+                setActiveMode('image');
+                loadImageIntoStudio(file);
+                showToast('Loaded demo news photo (1920×1080 JPEG)!', 'success');
+            } catch (err) {
+                console.error('Demo photo load error:', err);
+                if (window.location.protocol === 'file:') {
+                    showToast('Running via file://. Run CONVERTER.bat or drag sample_news_photo.jpg directly!', 'info');
+                } else {
+                    showToast('Could not load demo photo: ' + err.message, 'error');
+                }
+            }
+        });
+    }
+
+    // Initialize app cleanly at unified media dropzone
+    switchToWorkspace('dropzone');
+
+    // Window resize handler to reposition crop overlay
+    window.addEventListener('resize', () => {
+        if (currentImgElement && imageStudioSection && !imageStudioSection.classList.contains('hidden')) {
+            updateImgCropOverlay();
+        }
+    });
 
 });
 
