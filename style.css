@@ -2520,3 +2520,92 @@ input[type="range"]::-webkit-slider-thumb:hover {
     }
 }
 
+/* ==========================================================================
+   PWA & Mobile App Independent Styling
+   ========================================================================== */
+
+.btn-install-app {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.22), rgba(99, 102, 241, 0.28));
+    border: 1px solid rgba(6, 182, 212, 0.5);
+    color: var(--brand-cyan);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 2px 10px rgba(6, 182, 212, 0.2);
+    animation: pwaPulseGlow 3s infinite ease-in-out;
+}
+
+.btn-install-app:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.38), rgba(99, 102, 241, 0.45));
+    border-color: var(--brand-cyan);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.4);
+}
+
+@keyframes pwaPulseGlow {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(6, 182, 212, 0.2);
+    }
+    50% {
+        box-shadow: 0 2px 18px rgba(6, 182, 212, 0.5);
+    }
+}
+
+.pwa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(147, 51, 234, 0.12);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+/* Mobile Touch Optimization */
+@media (max-width: 640px) {
+    .header-container {
+        padding: 4px 0;
+    }
+    .brand-title {
+        font-size: 17px;
+    }
+    .brand-subtitle {
+        display: none;
+    }
+    .pill-status {
+        display: none;
+    }
+    .results-actions-bar {
+        flex-direction: column;
+        width: 100%;
+    }
+    .results-actions-bar .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .quick-duration-chips {
+        flex-wrap: wrap;
+    }
+    .hero-quick-tools {
+        flex-direction: column;
+        width: 100%;
+    }
+    .hero-quick-tools .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+

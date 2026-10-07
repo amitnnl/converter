@@ -1,18 +1,30 @@
 {
-  "name": "webp_converter",
+  "name": "presswebp",
   "version": "1.0.0",
-  "description": "��#\u0000 \u0000w\u0000e\u0000b\u0000p\u0000_\u0000c\u0000o\u0000n\u0000v\u0000e\u0000r\u0000t\u0000e\u0000r\u0000\r\u0000 \u0000",
+  "description": "PressWebP — Independent 1:1 Video and Photo to WebP Newsroom Converter (PWA & Android Mobile App)",
   "main": "app.js",
   "scripts": {
+    "start": "node scripts/serve.js",
+    "dev": "node scripts/serve.js",
     "build": "node sync-assets.js",
     "sync": "node sync-assets.js && npx cap sync android",
+    "build:apk": "node scripts/build-apk.js",
     "open:android": "npx cap open android"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/amitnnl/webp_converter.git"
   },
-  "keywords": [],
+  "keywords": [
+    "webp",
+    "converter",
+    "video-to-webp",
+    "image-to-webp",
+    "newsroom",
+    "pwa",
+    "capacitor",
+    "android"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

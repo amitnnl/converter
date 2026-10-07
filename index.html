@@ -6,6 +6,12 @@
     <title>PressWebP — Independent 1:1 Video to WebP Converter for Newsrooms</title>
     <meta name="description" content="High-performance, independent 1:1 video to animated WebP converter and compressor designed for newspaper agencies and editorial news desks. Embargo safe, 100% client-side.">
     <meta name="theme-color" content="#070a12" id="metaThemeColor">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PressWebP">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
     <script>
@@ -59,6 +65,12 @@
                 <div class="pill-status">
                     100% Client-Side • Embargo Safe
                 </div>
+                <button id="btnInstallApp" class="btn btn-install-app btn-sm hidden" title="Install PressWebP as App on your device">
+                    📲 Install App
+                </button>
+                <span id="pwaInstalledBadge" class="pwa-badge hidden" title="Running in standalone app mode">
+                    📱 App Mode
+                </span>
                 <button id="btnInspectSample" class="btn btn-secondary btn-sm" title="Inspect bundled sample WebP file">
                     🔍 Inspect WebP Sample
                 </button>
@@ -112,10 +124,10 @@
             </div>
             <div class="dropzone-quick-chips">
                 <span class="chip-tag">🎯 1:1 Editorial Ratio</span>
-                <span class="chip-tag">🎬 6s Video (500–800 KB)</span>
+                <span class="chip-tag">🎬 6s Video (200–500 KB)</span>
                 <span class="chip-tag">📸 Photo WebP (&lt;100 KB)</span>
                 <span class="chip-tag">🏷️ "GROUND ZERO" Watermark</span>
-                <span class="chip-tag">📁 Auto-Save to files/</span>
+                <span class="chip-tag">💾 Direct Device Downloads</span>
                 <span class="chip-tag">🔒 Zero Server Uploads</span>
             </div>
         </section>
@@ -210,21 +222,21 @@
                 <!-- Editorial Standards Presets -->
                 <div class="form-group">
                     <div class="form-label-row">
-                        <span>Editorial Standards (6s Duration • 500KB–800KB Target)</span>
-                        <span class="preset-badge" style="position:static; margin-left:auto;">500–800 KB Met ✅</span>
+                        <span>Editorial Standards (6s Duration • 200KB–500KB Target)</span>
+                        <span class="preset-badge" style="position:static; margin-left:auto;">200–500 KB Met ✅</span>
                     </div>
                     <div class="preset-grid">
-                        <div class="preset-card active" id="presetSample" data-w="640" data-h="640" data-fps="10" data-q="65" data-dur="6">
+                        <div class="preset-card active" id="presetSample" data-w="512" data-h="512" data-fps="10" data-q="55" data-dur="6">
                             <div class="preset-title">📰 6s News Standard</div>
-                            <div class="preset-meta">640×640 • 10 FPS • 6s (500–800 KB)</div>
+                            <div class="preset-meta">512×512 • 10 FPS • 6s (~350 KB)</div>
                         </div>
-                        <div class="preset-card" id="presetLite" data-w="540" data-h="540" data-fps="10" data-q="60" data-dur="6">
+                        <div class="preset-card" id="presetLite" data-w="480" data-h="480" data-fps="8" data-q="50" data-dur="6">
                             <div class="preset-title">⚡ 6s Fast Wire</div>
-                            <div class="preset-meta">540×540 • 10 FPS • 6s (~500 KB)</div>
+                            <div class="preset-meta">480×480 • 8 FPS • 6s (~250 KB)</div>
                         </div>
-                        <div class="preset-card" id="presetHQ" data-w="720" data-h="720" data-fps="8" data-q="62" data-dur="6">
+                        <div class="preset-card" id="presetHQ" data-w="576" data-h="576" data-fps="8" data-q="55" data-dur="6">
                             <div class="preset-title">💎 6s HD News</div>
-                            <div class="preset-meta">720×720 • 8 FPS • 6s (~750 KB)</div>
+                            <div class="preset-meta">576×576 • 8 FPS • 6s (~420 KB)</div>
                         </div>
                     </div>
                 </div>
@@ -297,16 +309,16 @@
                     <input type="number" id="trimStart" value="0.0" step="0.1" min="0">
                     <input type="number" id="trimEnd" value="6.0" step="0.1" min="0.1">
                     <button type="button" id="btnDur10">10s</button>
-                    <span id="valResolution">640 × 640</span>
-                    <input type="number" id="resWidth" value="640">
-                    <input type="number" id="resHeight" value="640">
+                    <span id="valResolution">512 × 512</span>
+                    <input type="number" id="resWidth" value="512">
+                    <input type="number" id="resHeight" value="512">
                     <span id="valFps">10 FPS</span>
                     <input type="range" id="fpsRange" min="5" max="30" step="1" value="10">
-                    <span id="valQuality">65%</span>
-                    <input type="range" id="qualityRange" min="10" max="100" step="5" value="65">
+                    <span id="valQuality">55%</span>
+                    <input type="range" id="qualityRange" min="10" max="100" step="5" value="55">
                     <input type="range" id="watermarkOpacity" min="30" max="100" step="5" value="85">
                     <span id="valWatermarkOpacity">85%</span>
-                    <div id="presetSocial" data-w="720" data-h="720" data-fps="10" data-q="68" data-dur="6"></div>
+                    <div id="presetSocial" data-w="540" data-h="540" data-fps="8" data-q="52" data-dur="6"></div>
                 </div>
 
                 <!-- Real-time Estimation Banner -->
@@ -317,17 +329,17 @@
                     </div>
                     <div class="est-row">
                         <span class="est-label">Estimated Output WebP:</span>
-                        <span class="est-value" id="estSize" style="color: var(--brand-emerald);">~580 KB – 720 KB</span>
+                        <span class="est-value" id="estSize" style="color: var(--brand-emerald);">~280 KB – 420 KB</span>
                     </div>
                     <div class="est-row budget-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span class="est-label" style="font-weight: 600;">Target Budget:</span>
                             <span class="est-value" id="estBudgetStatus" style="color: var(--brand-emerald); font-weight: 700;">
-                                🎯 500–800 KB Met ✅
+                                🎯 200–500 KB Met ✅
                             </span>
                         </div>
-                        <button type="button" id="btnAutoTuneBudget" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" title="Reset parameters to 6 sec & 500KB-800KB file size budget">
-                            Auto-Fit 500-800KB
+                        <button type="button" id="btnAutoTuneBudget" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" title="Reset parameters to 6 sec & 200KB-500KB file size budget">
+                            Auto-Fit 200-500KB
                         </button>
                     </div>
                 </div>
@@ -347,9 +359,8 @@
                         ✨ WebP Conversion Complete
                     </div>
                     <div class="auto-save-pill" id="autoSaveStatus">
-                        <span class="auto-save-icon">📁</span>
-                        <span>Auto-Saved to: <strong id="autoSavedPath">files/converted_1x1.webp</strong></span>
-                        <a id="btnOpenSavedFile" href="#" target="_blank" class="auto-save-link" title="Open saved file in browser">Open ↗</a>
+                        <span class="auto-save-icon">💾</span>
+                        <span>Saved to: <strong id="autoSavedPath">Downloads/converted_1x1.webp</strong></span>
                     </div>
                 </div>
                 <div class="results-actions-bar">
@@ -358,6 +369,9 @@
                     </button>
                     <button id="btnDownloadWebp" class="btn btn-primary btn-md">
                         📥 Download WebP File
+                    </button>
+                    <button id="btnShareWebp" class="btn btn-secondary btn-md hidden" title="Share via Mobile / System Share">
+                        📤 Share WebP
                     </button>
                     <button id="btnCopyClipboard" class="btn btn-secondary btn-md">
                         📋 Copy WebP
@@ -438,20 +452,19 @@
                         <div class="input-box">
                             <span>Batch 1:1 Editorial Preset</span>
                             <select id="batchPresetSelect" class="select-control">
-                                <option value="1:1-720" selected>📰 1:1 News Teaser (720×720)</option>
-                                <option value="1:1-1080">📱 1:1 Social Feed (1080×1080)</option>
-                                <option value="1:1-480">⚡ 1:1 Mobile Fast (480×480)</option>
-                                <option value="1:1-1200">💎 1:1 HQ Feature (1200×1200)</option>
-                                <option value="1:1-600">📑 1:1 Editorial Grid (600×600)</option>
-                                <option value="1:1-360">👤 1:1 Byline / Micro (360×360)</option>
+                                <option value="1:1-720" selected>📰 1:1 News Teaser (720×720 • &lt;100 KB)</option>
+                                <option value="1:1-600">📑 1:1 Editorial Grid (600×600 • ~50 KB)</option>
+                                <option value="1:1-480">⚡ 1:1 Mobile Fast (480×480 • ~35 KB)</option>
+                                <option value="1:1-800">💎 1:1 Clean Press (800×800 • &lt;100 KB)</option>
+                                <option value="1:1-360">👤 1:1 Byline / Micro (360×360 • ~20 KB)</option>
                             </select>
                         </div>
                         <div class="input-box">
                             <div class="label-with-val">
-                                <span>Batch Quality</span>
-                                <span id="valBatchQuality">82%</span>
+                                <span>Batch Quality (Auto &lt;100 KB)</span>
+                                <span id="valBatchQuality">75%</span>
                             </div>
-                            <input type="range" id="batchQualityRange" min="10" max="100" step="2" value="82">
+                            <input type="range" id="batchQualityRange" min="10" max="100" step="2" value="75">
                         </div>
                         <div class="input-box">
                             <span>Article / Slug Prefix</span>
@@ -473,7 +486,7 @@
                             📥 Download All as ZIP
                         </button>
                         <button id="btnAutoSaveBatchAll" class="btn btn-secondary btn-md hidden">
-                            📁 Save All to files/
+                            💾 Save All to Device
                         </button>
                         <div class="batch-status-note" id="batchGlobalStatus">Ready to convert</div>
                     </div>
@@ -543,11 +556,11 @@
                     <div class="quick-ratio-toolbar">
                         <span class="ratio-label">1:1 Square Size:</span>
                         <div class="ratio-chips-row">
-                            <button type="button" class="ratio-chip-btn active" data-ratio="1:1" data-w="720" data-h="720" id="chipRatio720">720×720 (Std)</button>
-                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="1080" data-h="1080" id="chipRatio1080">1080×1080 (HD)</button>
-                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="480" data-h="480" id="chipRatio480">480×480 (Fast)</button>
-                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="1200" data-h="1200" id="chipRatio1200">1200×1200 (HQ)</button>
+                            <button type="button" class="ratio-chip-btn active" data-ratio="1:1" data-w="720" data-h="720" id="chipRatio720">720×720 (Std • &lt;100KB)</button>
                             <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="600" data-h="600" id="chipRatio600">600×600 (Grid)</button>
+                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="480" data-h="480" id="chipRatio480">480×480 (Fast)</button>
+                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="800" data-h="800" id="chipRatio800">800×800 (Press • &lt;100KB)</button>
+                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="360" data-h="360" id="chipRatio360">360×360 (Micro)</button>
                         </div>
                     </div>
                 </div>
@@ -566,30 +579,30 @@
                             <span>1:1 Editorial Ratio Presets</span>
                         </div>
                         <div class="preset-grid preset-grid-news">
-                            <div class="preset-card active" id="presetImgStandard" data-ratio="1:1" data-w="720" data-h="720" data-q="82">
-                                <span class="preset-badge">Standard</span>
+                            <div class="preset-card active" id="presetImgStandard" data-ratio="1:1" data-w="720" data-h="720" data-q="75">
+                                <span class="preset-badge">&lt;100 KB Met ✅</span>
                                 <div class="preset-title">📰 1:1 News Teaser</div>
-                                <div class="preset-meta">720×720 • Standard Web</div>
+                                <div class="preset-meta">720×720 • Target &lt;100 KB (~55–80 KB)</div>
                             </div>
-                            <div class="preset-card" id="presetImgSocial" data-ratio="1:1" data-w="1080" data-h="1080" data-q="85">
-                                <div class="preset-title">📱 1:1 Social Feed</div>
-                                <div class="preset-meta">1080×1080 • App / Feed</div>
-                            </div>
-                            <div class="preset-card" id="presetImgFast" data-ratio="1:1" data-w="480" data-h="480" data-q="75">
-                                <div class="preset-title">⚡ 1:1 Mobile Fast</div>
-                                <div class="preset-meta">480×480 • &lt;60KB Ultra Fast</div>
-                            </div>
-                            <div class="preset-card" id="presetImgHQ" data-ratio="1:1" data-w="1200" data-h="1200" data-q="88">
-                                <div class="preset-title">💎 1:1 HQ Feature</div>
-                                <div class="preset-meta">1200×1200 • Retina Press</div>
-                            </div>
-                            <div class="preset-card" id="presetImgGrid" data-ratio="1:1" data-w="600" data-h="600" data-q="80">
+                            <div class="preset-card" id="presetImgGrid" data-ratio="1:1" data-w="600" data-h="600" data-q="75">
                                 <div class="preset-title">📑 1:1 Editorial Grid</div>
-                                <div class="preset-meta">600×600 • Column Archive</div>
+                                <div class="preset-meta">600×600 • (~40–65 KB)</div>
                             </div>
-                            <div class="preset-card" id="presetImgByline" data-ratio="1:1" data-w="360" data-h="360" data-q="75">
+                            <div class="preset-card" id="presetImgFast" data-ratio="1:1" data-w="480" data-h="480" data-q="70">
+                                <div class="preset-title">⚡ 1:1 Mobile Fast</div>
+                                <div class="preset-meta">480×480 • Ultra Fast (~25–45 KB)</div>
+                            </div>
+                            <div class="preset-card" id="presetImgHQ" data-ratio="1:1" data-w="800" data-h="800" data-q="75">
+                                <div class="preset-title">💎 1:1 Clean Press</div>
+                                <div class="preset-meta">800×800 • High Res Target &lt;100 KB</div>
+                            </div>
+                            <div class="preset-card" id="presetImgSocial" data-ratio="1:1" data-w="720" data-h="720" data-q="72">
+                                <div class="preset-title">📱 1:1 Social Feed</div>
+                                <div class="preset-meta">720×720 • App Feed (~50–75 KB)</div>
+                            </div>
+                            <div class="preset-card" id="presetImgByline" data-ratio="1:1" data-w="360" data-h="360" data-q="72">
                                 <div class="preset-title">👤 1:1 Byline / Micro</div>
-                                <div class="preset-meta">360×360 • Author / Ticker</div>
+                                <div class="preset-meta">360×360 • Micro Icon (~15–30 KB)</div>
                             </div>
                         </div>
                     </div>
@@ -663,13 +676,13 @@
                     <!-- WebP Compression Quality & Lossless Toggle -->
                     <div class="form-group">
                         <div class="form-label-row">
-                            <span>WebP Compression Quality</span>
-                            <span class="form-value-tag" id="valImgQuality">82%</span>
+                            <span>WebP Compression Quality (Target &lt;100 KB)</span>
+                            <span class="form-value-tag" id="valImgQuality">75%</span>
                         </div>
-                        <input type="range" id="imgQualityRange" min="10" max="100" step="2" value="82">
+                        <input type="range" id="imgQualityRange" min="10" max="100" step="2" value="75">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                             <div style="font-size: 11px; color: var(--text-muted);">
-                                80–85% provides crisp newsroom clarity with 80%+ file savings.
+                                70–78% auto-calibrated to keep every photo strictly under 100 KB with crystal-clear news clarity.
                             </div>
                             <label class="checkbox-label" title="Lossless WebP provides pixel-perfect encoding for charts, infographics, and graphics" style="margin: 0; font-size: 12px;">
                                 <input type="checkbox" id="chkLosslessWebp">
@@ -719,11 +732,11 @@
                     <div class="estimation-box card-3d">
                         <div class="est-row">
                             <span class="est-label">Estimated Output Size:</span>
-                            <span class="est-value" id="estImgSize" style="color: var(--brand-cyan);">~120 KB – 180 KB</span>
+                            <span class="est-value" id="estImgSize" style="color: var(--brand-emerald);">~45 KB – 85 KB (&lt;100 KB Target)</span>
                         </div>
                         <div class="est-row">
-                            <span class="est-label">Core Web Vitals Impact:</span>
-                            <span class="est-value" id="estImgVitals" style="color: var(--brand-emerald);">⚡ Passes LCP (&lt;150ms)</span>
+                            <span class="est-label">Target Budget Status:</span>
+                            <span class="est-value" id="estImgVitals" style="color: var(--brand-emerald);">🎯 Strictly Under 100 KB Met ✅</span>
                         </div>
                     </div>
 
@@ -742,9 +755,8 @@
                             ✨ News WebP Ready for Publishing
                         </div>
                         <div class="auto-save-pill" id="imgAutoSaveStatus">
-                            <span class="auto-save-icon">📁</span>
-                            <span>Auto-Saved to: <strong id="imgAutoSavedPath">files/headline_news.webp</strong></span>
-                            <a id="btnOpenSavedImgFile" href="#" target="_blank" class="auto-save-link" title="Open saved file in browser">Open ↗</a>
+                            <span class="auto-save-icon">💾</span>
+                            <span>Saved to: <strong id="imgAutoSavedPath">Downloads/headline_news.webp</strong></span>
                         </div>
                     </div>
                     <div class="results-actions-bar">
@@ -753,6 +765,9 @@
                         </button>
                         <button id="btnDownloadImageWebp" class="btn btn-primary btn-md">
                             📥 Download WebP
+                        </button>
+                        <button id="btnShareImageWebp" class="btn btn-secondary btn-md hidden" title="Share via Mobile / System Share">
+                            📤 Share WebP
                         </button>
                         <button id="btnCopyImageClipboard" class="btn btn-secondary btn-md">
                             📋 Copy WebP
@@ -780,7 +795,7 @@
                     <div class="preview-box" style="border-color: var(--border-accent);">
                         <div class="preview-box-header">
                             <span style="color: var(--brand-cyan);">Optimized WebP for Newsroom CMS</span>
-                            <span class="meta-pill" id="webpImgResultSize" style="background: rgba(16, 185, 129, 0.15); color: var(--brand-emerald); border-color: rgba(16, 185, 129, 0.3);">148 KB</span>
+                            <span class="meta-pill" id="webpImgResultSize" style="background: rgba(16, 185, 129, 0.15); color: var(--brand-emerald); border-color: rgba(16, 185, 129, 0.3);">&lt;100 KB Met ✅</span>
                         </div>
                         <div class="preview-media-container image-preview-container">
                             <img id="comparisonImgWebp" alt="Converted News WebP Preview">
@@ -837,18 +852,18 @@
         </div>
     </div>
 
-    <!-- New Video Prompt Modal (Triggers immediately after auto-save) -->
+    <!-- New Video Prompt Modal (Triggers immediately after conversion) -->
     <div id="newVideoModal" class="modal-overlay">
         <div class="new-video-modal-card">
             <button id="btnCloseNewVideoModal" class="close-btn" title="Close modal">&times;</button>
             <div class="success-icon-badge">✨</div>
             <h3 class="new-video-title">Conversion Complete!</h3>
             <p class="new-video-desc">
-                Your 1:1 animated WebP has been automatically saved to your local storage:
+                Your 1:1 animated WebP has been saved to your device:
             </p>
             <div class="new-video-path-box">
-                <span class="path-folder-icon">📂</span>
-                <span id="modalSavedPath" class="path-text">files/converted_1x1.webp</span>
+                <span class="path-folder-icon">📥</span>
+                <span id="modalSavedPath" class="path-text">Downloads/converted_1x1.webp</span>
             </div>
             
             <div class="new-video-question">
@@ -859,8 +874,11 @@
                 <button id="btnPromptSelectNew" class="btn btn-primary btn-lg pulse-glow">
                     🎬 Select New Video
                 </button>
+                <button id="btnModalShare" class="btn btn-secondary btn-md hidden" title="Share WebP">
+                    📤 Share WebP
+                </button>
                 <button id="btnPromptStayReview" class="btn btn-secondary btn-md">
-                    👁️ Stay & Review Results
+                    👁️ Stay &amp; Review Results
                 </button>
             </div>
 

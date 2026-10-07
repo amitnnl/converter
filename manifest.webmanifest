@@ -1,0 +1,52 @@
+{
+  "name": "PressWebP — Newsroom 1:1 Media Converter",
+  "short_name": "PressWebP",
+  "id": "presswebp-app",
+  "description": "Independent 1:1 video and photo to WebP converter for editorial newsrooms and mobile devices. 100% client-side and embargo-safe.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070a12",
+  "theme_color": "#070a12",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "productivity",
+    "photo",
+    "utilities",
+    "news"
+  ],
+  "shortcuts": [
+    {
+      "name": "Convert Video",
+      "short_name": "Video",
+      "description": "Convert video clips to 1:1 animated WebP",
+      "url": "./index.html?mode=video"
+    },
+    {
+      "name": "Convert Photo",
+      "short_name": "Photo",
+      "description": "Optimize wire photos to 1:1 editorial WebP",
+      "url": "./index.html?mode=image"
+    }
+  ]
+}

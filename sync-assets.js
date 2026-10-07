@@ -12,15 +12,23 @@ const filesToCopy = [
     'app.js',
     'webp-muxer.js',
     'favicon.svg',
-    'save.php',
+    'icon-192.png',
+    'icon-512.png',
+    'manifest.webmanifest',
+    'sw.js',
     '1002622311_1x1_6sec.webp',
     'sample_news_photo.jpg'
 ];
 
-const wwwFilesDir = path.join(wwwDir, 'files');
-if (!fs.existsSync(wwwFilesDir)) {
-    fs.mkdirSync(wwwFilesDir, { recursive: true });
-}
+// Clean up obsolete server files or directories in www/ if present
+const obsoleteItems = ['save.php', 'files'];
+obsoleteItems.forEach(item => {
+    const p = path.join(wwwDir, item);
+    if (fs.existsSync(p)) {
+        fs.rmSync(p, { recursive: true, force: true });
+        console.log(`Cleaned up obsolete www/${item}`);
+    }
+});
 
 filesToCopy.forEach(file => {
     const src = path.join(__dirname, file);

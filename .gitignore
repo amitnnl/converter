@@ -43,7 +43,7 @@ android/local.properties
 android/*.iml
 android/*/*.iml
 
-# Generated binary packages (built via GitHub Actions or BUILD_APK.bat)
+# Generated binary packages (built via npm run build:apk or CI)
 *.apk
 *.aab
 
