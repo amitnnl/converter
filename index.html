@@ -214,7 +214,7 @@
             <div class="studio-config-card">
                 <div class="panel-header">
                     <div class="panel-title">
-                        ⚙️ Conversion & Compression
+                        📰 News Website Publishing Settings
                     </div>
                     <span class="form-value-tag active-tag">Standards & Watermark</span>
                 </div>
@@ -241,7 +241,7 @@
                     </div>
                 </div>
 
-                <!-- Framing Mode (Crop vs Blurred Background) -->
+                <!-- Framing Mode (Crop vs Blurred Background vs Dark BG) -->
                 <div class="form-group">
                     <div class="form-label-row">
                         <span>1:1 Framing Style</span>
@@ -253,8 +253,57 @@
                         </div>
                         <div class="framing-radio-card" id="modeBlurCard">
                             <input type="radio" name="framingMode" id="modeBlur" value="blur">
-                            <label for="modeBlur">Fit with Blurred BG</label>
+                            <label for="modeBlur">Fit with Blurred BG (1:1)</label>
                         </div>
+                        <div class="framing-radio-card" id="modeSolidCard">
+                            <input type="radio" name="framingMode" id="modeSolid" value="solid">
+                            <label for="modeSolid">Fit with Dark BG (1:1)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Output Dimensions (1:1 Square) & Scaling -->
+                <div class="form-group">
+                    <div class="form-label-row">
+                        <span>Output Dimensions (1:1 Square)</span>
+                        <span class="form-value-tag" id="valResolution">512 × 512</span>
+                    </div>
+                    <div class="trim-inputs-row">
+                        <div class="input-box">
+                            <span>Width (px)</span>
+                            <input type="number" id="resWidth" class="input-control" value="512" step="16" min="128" max="1920">
+                        </div>
+                        <div class="input-box">
+                            <span>Height (px)</span>
+                            <input type="number" id="resHeight" class="input-control" value="512" step="16" min="128" max="1920">
+                        </div>
+                    </div>
+                    <div class="quick-duration-chips" style="margin-top: 8px;">
+                        <button type="button" class="chip-btn" id="btnVideoScale100">100%</button>
+                        <button type="button" class="chip-btn" id="btnVideoScale75">75%</button>
+                        <button type="button" class="chip-btn" id="btnVideoScale50">50%</button>
+                        <button type="button" class="chip-btn active" id="btnVideoLockAspect" title="1:1 Aspect ratio locked">🔒 1:1 Locked</button>
+                    </div>
+                </div>
+
+                <!-- News SEO & Article Headline Slug Auto-Naming -->
+                <div class="form-group">
+                    <div class="form-label-row">
+                        <span>News SEO Headline Slug</span>
+                        <span class="form-value-tag" id="valVideoSlugExt">.webp</span>
+                    </div>
+                    <div class="input-box">
+                        <input type="text" id="videoArticleHeadline" class="input-control" placeholder="Enter headline for Google News SEO slug" value="headline_news_clip">
+                        <div class="seo-slug-preview">
+                            <span>SEO Slug: </span>
+                            <code id="videoSlugPreview">headline-news-clip_512x512.webp</code>
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <label class="checkbox-label" title="Strip personal camera and geolocation EXIF metadata for embargo compliance">
+                            <input type="checkbox" id="chkVideoStripExif" checked>
+                            <span>Strip EXIF / Video Metadata (Embargo Safe)</span>
+                        </label>
                     </div>
                 </div>
 
@@ -272,6 +321,27 @@
                     </div>
                 </div>
 
+                <!-- WebP Compression Quality & Frame Rate -->
+                <div class="form-group">
+                    <div class="form-label-row">
+                        <span>WebP Compression Quality (200KB–500KB Budget)</span>
+                        <span class="form-value-tag" id="valQuality">55%</span>
+                    </div>
+                    <input type="range" id="qualityRange" min="20" max="95" step="5" value="55">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <div style="font-size: 11px; color: var(--text-muted);">
+                            50–60% auto-tuned for 200–500 KB animated WebP standard.
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 11px; color: var(--text-muted);">FPS:</span>
+                            <span class="form-value-tag" id="valFps">10 FPS</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 6px;">
+                        <input type="range" id="fpsRange" min="5" max="24" step="1" value="10">
+                    </div>
+                </div>
+
                 <!-- Editorial Watermark Settings (Prominent, Center Only, Increased Size) -->
                 <div class="form-group watermark-form-group">
                     <div class="form-label-row">
@@ -279,7 +349,7 @@
                             <label class="toggle-switch-label" for="enableWatermark">
                                 <input type="checkbox" id="enableWatermark" checked>
                                 <span class="toggle-switch-slider"></span>
-                                <span class="watermark-title-text">🏷️ Newsroom Watermark</span>
+                                <span class="watermark-title-text">🏷️ Newsroom Watermark & Credit</span>
                             </label>
                         </div>
                         <span class="form-value-tag active-tag" id="valWatermarkBadge">GROUND ZERO</span>
@@ -288,14 +358,14 @@
                     <div id="watermarkConfigPanel" class="watermark-config-panel">
                         <div class="watermark-inputs-row">
                             <div class="input-box watermark-text-box" style="flex: 1.4;">
-                                <span>Watermark Text</span>
+                                <span>Watermark Text / Credit</span>
                                 <input type="text" id="watermarkText" class="input-control" value="GROUND ZERO" maxlength="30" placeholder="e.g. GROUND ZERO">
                             </div>
                             <div class="input-box" style="flex: 1;">
                                 <span>Watermark Style</span>
                                 <select id="watermarkStyle" class="select-control">
-                                    <option value="badge" selected>🔴 Live News Badge</option>
-                                    <option value="pill">📰 Dark Editorial Pill</option>
+                                    <option value="badge" selected>🔴 Live Breaking News Badge</option>
+                                    <option value="pill">📰 Dark Editorial Glass Pill</option>
                                     <option value="shadow">✨ Shadowed Text</option>
                                 </select>
                             </div>
@@ -309,13 +379,6 @@
                     <input type="number" id="trimStart" value="0.0" step="0.1" min="0">
                     <input type="number" id="trimEnd" value="6.0" step="0.1" min="0.1">
                     <button type="button" id="btnDur10">10s</button>
-                    <span id="valResolution">512 × 512</span>
-                    <input type="number" id="resWidth" value="512">
-                    <input type="number" id="resHeight" value="512">
-                    <span id="valFps">10 FPS</span>
-                    <input type="range" id="fpsRange" min="5" max="30" step="1" value="10">
-                    <span id="valQuality">55%</span>
-                    <input type="range" id="qualityRange" min="10" max="100" step="5" value="55">
                     <input type="range" id="watermarkOpacity" min="30" max="100" step="5" value="85">
                     <span id="valWatermarkOpacity">85%</span>
                     <div id="presetSocial" data-w="540" data-h="540" data-fps="8" data-q="52" data-dur="6"></div>
@@ -571,38 +634,28 @@
                         <div class="panel-title">
                             📰 News Website Publishing Settings
                         </div>
+                        <span class="form-value-tag active-tag">Standards & Watermark</span>
                     </div>
 
                     <!-- 1:1 Editorial Ratio Presets -->
                     <div class="form-group">
                         <div class="form-label-row">
-                            <span>1:1 Editorial Ratio Presets</span>
+                            <span>Editorial Standards (1:1 Ratio • &lt;100KB Target)</span>
+                            <span class="preset-badge" style="position:static; margin-left:auto;">&lt;100 KB Met ✅</span>
                         </div>
                         <div class="preset-grid preset-grid-news">
                             <div class="preset-card active" id="presetImgStandard" data-ratio="1:1" data-w="720" data-h="720" data-q="75">
                                 <span class="preset-badge">&lt;100 KB Met ✅</span>
-                                <div class="preset-title">📰 1:1 News Teaser</div>
+                                <div class="preset-title">📰 1:1 News Standard</div>
                                 <div class="preset-meta">720×720 • Target &lt;100 KB (~55–80 KB)</div>
                             </div>
-                            <div class="preset-card" id="presetImgGrid" data-ratio="1:1" data-w="600" data-h="600" data-q="75">
-                                <div class="preset-title">📑 1:1 Editorial Grid</div>
-                                <div class="preset-meta">600×600 • (~40–65 KB)</div>
-                            </div>
                             <div class="preset-card" id="presetImgFast" data-ratio="1:1" data-w="480" data-h="480" data-q="70">
-                                <div class="preset-title">⚡ 1:1 Mobile Fast</div>
+                                <div class="preset-title">⚡ 1:1 Fast Wire</div>
                                 <div class="preset-meta">480×480 • Ultra Fast (~25–45 KB)</div>
                             </div>
                             <div class="preset-card" id="presetImgHQ" data-ratio="1:1" data-w="800" data-h="800" data-q="75">
-                                <div class="preset-title">💎 1:1 Clean Press</div>
+                                <div class="preset-title">💎 1:1 HD News</div>
                                 <div class="preset-meta">800×800 • High Res Target &lt;100 KB</div>
-                            </div>
-                            <div class="preset-card" id="presetImgSocial" data-ratio="1:1" data-w="720" data-h="720" data-q="72">
-                                <div class="preset-title">📱 1:1 Social Feed</div>
-                                <div class="preset-meta">720×720 • App Feed (~50–75 KB)</div>
-                            </div>
-                            <div class="preset-card" id="presetImgByline" data-ratio="1:1" data-w="360" data-h="360" data-q="72">
-                                <div class="preset-title">👤 1:1 Byline / Micro</div>
-                                <div class="preset-meta">360×360 • Micro Icon (~15–30 KB)</div>
                             </div>
                         </div>
                     </div>
@@ -734,9 +787,16 @@
                             <span class="est-label">Estimated Output Size:</span>
                             <span class="est-value" id="estImgSize" style="color: var(--brand-emerald);">~45 KB – 85 KB (&lt;100 KB Target)</span>
                         </div>
-                        <div class="est-row">
-                            <span class="est-label">Target Budget Status:</span>
-                            <span class="est-value" id="estImgVitals" style="color: var(--brand-emerald);">🎯 Strictly Under 100 KB Met ✅</span>
+                        <div class="est-row budget-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span class="est-label" style="font-weight: 600;">Target Budget Status:</span>
+                                <span class="est-value" id="estImgVitals" style="color: var(--brand-emerald); font-weight: 700;">
+                                    🎯 Strictly Under 100 KB Met ✅
+                                </span>
+                            </div>
+                            <button type="button" id="btnAutoTuneImgBudget" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" title="Reset parameters to 720x720 & strictly under 100KB file size budget">
+                                Auto-Fit &lt;100KB
+                            </button>
                         </div>
                     </div>
 

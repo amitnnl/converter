@@ -36,8 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAlignRight = document.getElementById('btnAlignRight');
     const modeFillCard = document.getElementById('modeFillCard');
     const modeBlurCard = document.getElementById('modeBlurCard');
+    const modeSolidCard = document.getElementById('modeSolidCard');
     const modeFill = document.getElementById('modeFill');
     const modeBlur = document.getElementById('modeBlur');
+    const modeSolid = document.getElementById('modeSolid');
 
     // Settings & Trimming
     const presetCards = document.querySelectorAll('.preset-card');
@@ -73,6 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const resWidth = document.getElementById('resWidth');
     const resHeight = document.getElementById('resHeight');
     const valResolution = document.getElementById('valResolution');
+    const btnVideoScale100 = document.getElementById('btnVideoScale100');
+    const btnVideoScale75 = document.getElementById('btnVideoScale75');
+    const btnVideoScale50 = document.getElementById('btnVideoScale50');
+    const btnVideoLockAspect = document.getElementById('btnVideoLockAspect');
+
+    const videoArticleHeadline = document.getElementById('videoArticleHeadline');
+    const videoSlugPreview = document.getElementById('videoSlugPreview');
+    const chkVideoStripExif = document.getElementById('chkVideoStripExif');
+
     const fpsRange = document.getElementById('fpsRange');
     const valFps = document.getElementById('valFps');
     const qualityRange = document.getElementById('qualityRange');
@@ -150,6 +161,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDraggingCrop = false;
     let dragStartX = 0;
     let dragStartRatio = 0.5;
+
+    // News SEO Slug Helpers (Shared by Video & Image Studios)
+    function slugify(text) {
+        return (text || '')
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    function getVideoSlugFilename() {
+        const headline = videoArticleHeadline ? videoArticleHeadline.value.trim() : '';
+        const base = slugify(headline) || (currentVideoFile ? currentVideoFile.name.replace(/\.[^/.]+$/, '') : 'headline_news_clip');
+        const cleanBase = slugify(base) || 'headline_news_clip';
+        const w = parseInt(resWidth ? resWidth.value : 512, 10) || 512;
+        const h = parseInt(resHeight ? resHeight.value : 512, 10) || 512;
+        return `${cleanBase}_${w}x${h}.webp`;
+    }
+
+    function updateVideoSlugPreview() {
+        if (!videoSlugPreview) return;
+        videoSlugPreview.textContent = getVideoSlugFilename();
+    }
+
+    if (videoArticleHeadline) {
+        videoArticleHeadline.addEventListener('input', updateVideoSlugPreview);
+    }
 
     // =========================================================================
     // Toast Notification System
@@ -358,6 +398,12 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCropOverlay();
             updateEstimation();
             updateWatermarkPreview();
+
+            if (videoArticleHeadline && currentVideoFile) {
+                const rawHeadline = currentVideoFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+                videoArticleHeadline.value = rawHeadline;
+            }
+            updateVideoSlugPreview();
 
             // Set comparison video src too
             comparisonVideo.src = url;
@@ -750,22 +796,39 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAlignRight.classList.toggle('active', Math.abs(cropOffsetRatio - 0.75) < 0.1);
     }
 
-    // Framing Style (Fill vs Blur)
-    modeFillCard.addEventListener('click', () => {
-        modeFill.checked = true;
-        modeFillCard.classList.add('active');
-        modeBlurCard.classList.remove('active');
-        cropGuideSquare.classList.remove('framing-blur');
-        cropGuideSquare.style.display = 'block';
-    });
+    // Framing Style (Fill vs Blur vs Solid Dark BG)
+    if (modeFillCard) {
+        modeFillCard.addEventListener('click', () => {
+            if (modeFill) modeFill.checked = true;
+            modeFillCard.classList.add('active');
+            if (modeBlurCard) modeBlurCard.classList.remove('active');
+            if (modeSolidCard) modeSolidCard.classList.remove('active');
+            cropGuideSquare.classList.remove('framing-blur');
+            cropGuideSquare.style.display = 'block';
+        });
+    }
 
-    modeBlurCard.addEventListener('click', () => {
-        modeBlur.checked = true;
-        modeBlurCard.classList.add('active');
-        modeFillCard.classList.remove('active');
-        cropGuideSquare.classList.add('framing-blur');
-        cropGuideSquare.style.display = 'block';
-    });
+    if (modeBlurCard) {
+        modeBlurCard.addEventListener('click', () => {
+            if (modeBlur) modeBlur.checked = true;
+            modeBlurCard.classList.add('active');
+            if (modeFillCard) modeFillCard.classList.remove('active');
+            if (modeSolidCard) modeSolidCard.classList.remove('active');
+            cropGuideSquare.classList.add('framing-blur');
+            cropGuideSquare.style.display = 'block';
+        });
+    }
+
+    if (modeSolidCard) {
+        modeSolidCard.addEventListener('click', () => {
+            if (modeSolid) modeSolid.checked = true;
+            modeSolidCard.classList.add('active');
+            if (modeFillCard) modeFillCard.classList.remove('active');
+            if (modeBlurCard) modeBlurCard.classList.remove('active');
+            cropGuideSquare.classList.add('framing-blur');
+            cropGuideSquare.style.display = 'block';
+        });
+    }
 
     // =========================================================================
     // Video Player & Scrubbing
@@ -1037,18 +1100,49 @@ document.addEventListener('DOMContentLoaded', () => {
             setTrimDuration(dur);
         }
         updateEstimation();
+        updateVideoSlugPreview();
     }
 
+    let isVideoAspectLocked = true;
+    if (btnVideoLockAspect) {
+        btnVideoLockAspect.addEventListener('click', () => {
+            isVideoAspectLocked = !isVideoAspectLocked;
+            btnVideoLockAspect.classList.toggle('active', isVideoAspectLocked);
+            btnVideoLockAspect.textContent = isVideoAspectLocked ? '🔒 1:1 Locked' : '🔓 Free Ratio';
+            showToast(isVideoAspectLocked ? '1:1 Video Ratio locked' : 'Video aspect ratio unlocked', 'info');
+        });
+    }
+
+    function applyVideoDimensionScale(factor) {
+        const currentSide = parseInt(resWidth.value, 10) || 512;
+        const newSide = Math.round(currentSide * factor);
+        resWidth.value = newSide;
+        resHeight.value = newSide;
+        if (valResolution) valResolution.textContent = `${newSide} × ${newSide}`;
+        updateEstimation();
+        updateVideoSlugPreview();
+    }
+
+    if (btnVideoScale100) btnVideoScale100.addEventListener('click', () => applyVideoDimensionScale(1.0));
+    if (btnVideoScale75) btnVideoScale75.addEventListener('click', () => applyVideoDimensionScale(0.75));
+    if (btnVideoScale50) btnVideoScale50.addEventListener('click', () => applyVideoDimensionScale(0.50));
+
     resWidth.addEventListener('input', () => {
-        resHeight.value = resWidth.value; // Enforce 1:1 Square
+        if (isVideoAspectLocked) {
+            resHeight.value = resWidth.value; // Enforce 1:1 Square
+        }
         valResolution.textContent = `${resWidth.value} × ${resHeight.value}`;
         updateEstimation();
+        updateVideoSlugPreview();
     });
 
     resHeight.addEventListener('input', () => {
-        resWidth.value = resHeight.value; // Enforce 1:1 Square
+        if (isVideoAspectLocked) {
+            resWidth.value = resHeight.value; // Enforce 1:1 Square
+        }
         valResolution.textContent = `${resWidth.value} × ${resHeight.value}`;
         updateEstimation();
+        updateVideoSlugPreview();
     });
 
     fpsRange.addEventListener('input', () => {
@@ -1081,6 +1175,12 @@ document.addEventListener('DOMContentLoaded', () => {
         resHeight.value = 512;
         valResolution.textContent = '512 × 512';
 
+        isVideoAspectLocked = true;
+        if (btnVideoLockAspect) {
+            btnVideoLockAspect.classList.add('active');
+            btnVideoLockAspect.textContent = '🔒 1:1 Locked';
+        }
+
         fpsRange.value = 10;
         valFps.textContent = '10 FPS';
 
@@ -1094,6 +1194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         durationChips.forEach(c => c.classList.toggle('active', c.id === 'btnDur6'));
 
         updateEstimation();
+        updateVideoSlugPreview();
         showToast('🎯 Calibrated: 6.0s clip & 200KB–500KB file size budget applied!', 'success');
     }
 
@@ -1174,7 +1275,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetW = parseInt(resWidth.value, 10) || 512;
         const targetH = parseInt(resHeight.value, 10) || 512;
         let quality = (parseInt(qualityRange.value, 10) || 55) / 100;
-        const isBlurMode = modeBlur.checked;
+        const isBlurMode = modeBlur ? modeBlur.checked : false;
+        const isSolidMode = modeSolid ? modeSolid.checked : false;
 
         // Auto-budget guard: keep resulting animated WebP strictly within 200–500 KB
         const estKb = Math.round(totalFrames * 5.8 * ((targetW * targetH) / (512 * 512)) * Math.pow(quality / 0.55, 1.25));
@@ -1257,6 +1359,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     offscreenCtx.filter = 'blur(20px) brightness(0.65) saturate(1.3)';
                     offscreenCtx.drawImage(sourceVideo, -20, -20, targetW + 40, targetH + 40);
                     offscreenCtx.restore();
+
+                    // Draw centered aspect-fit video
+                    const scale = Math.min(targetW / vW, targetH / vH);
+                    const fitW = vW * scale;
+                    const fitH = vH * scale;
+                    const fitX = (targetW - fitW) / 2;
+                    const fitY = (targetH - fitH) / 2;
+                    offscreenCtx.drawImage(sourceVideo, fitX, fitY, fitW, fitH);
+                } else if (isSolidMode) {
+                    // 1:1 Contain with dark background
+                    offscreenCtx.fillStyle = '#070a12';
+                    offscreenCtx.fillRect(0, 0, targetW, targetH);
 
                     // Draw centered aspect-fit video
                     const scale = Math.min(targetW / vW, targetH / vH);
@@ -1686,6 +1800,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getWebpFilename() {
+        if (videoArticleHeadline && videoArticleHeadline.value.trim()) {
+            return getVideoSlugFilename();
+        }
         const sourceName = currentVideoFile ? currentVideoFile.name.replace(/\.[^/.]+$/, '') : 'news_clip';
         // Keep the filename valid for Android's Downloads provider and desktop filesystems.
         return `${sourceName.replace(/[\\/:*?"<>|]/g, '_').trim() || 'news_clip'}_1x1.webp`;
@@ -2037,6 +2154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const estImgSize = document.getElementById('estImgSize');
     const estImgVitals = document.getElementById('estImgVitals');
+    const btnAutoTuneImgBudget = document.getElementById('btnAutoTuneImgBudget');
     const btnConvertImage = document.getElementById('btnConvertImage');
 
     // Results Elements
@@ -2484,6 +2602,50 @@ document.addEventListener('DOMContentLoaded', () => {
             estImgVitals.textContent = '⚡ Lightning Fast (Auto-Budget Tuned)';
             estImgVitals.style.color = 'var(--brand-emerald)';
         }
+    }
+
+    function autoTuneImgToBudget() {
+        setImgDimensions(720, 720);
+        if (imgQualityRange) {
+            imgQualityRange.value = 75;
+            if (valImgQuality) valImgQuality.textContent = '75%';
+        }
+        if (chkLosslessWebp) {
+            chkLosslessWebp.checked = false;
+        }
+
+        presetImgCards.forEach(c => c.classList.remove('active'));
+        const pStd = document.getElementById('presetImgStandard');
+        if (pStd) pStd.classList.add('active');
+
+        ratioChips.forEach(chip => {
+            chip.classList.toggle('active', parseInt(chip.dataset.w, 10) === 720);
+        });
+
+        if (imgModeFillCard) {
+            imgModeFill.checked = true;
+            imgModeFillCard.classList.add('active');
+            if (imgModeBlurCard) imgModeBlurCard.classList.remove('active');
+            if (imgModeSolidCard) imgModeSolidCard.classList.remove('active');
+            if (imgCropGuide) imgCropGuide.classList.remove('framing-blur');
+        }
+
+        isAspectLocked = true;
+        if (btnLockAspect) {
+            btnLockAspect.classList.add('active');
+            btnLockAspect.textContent = '🔒 1:1 Locked';
+        }
+
+        updateImgCropOverlay();
+        updateImgEstimation();
+        updateSlugPreview();
+        showToast('🎯 Calibrated: 720×720 square & strictly <100 KB file size budget applied!', 'success');
+    }
+
+    if (btnAutoTuneImgBudget) {
+        btnAutoTuneImgBudget.addEventListener('click', () => {
+            autoTuneImgToBudget();
+        });
     }
 
     // -------------------------------------------------------------------------
