@@ -52,13 +52,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDurFull = document.getElementById('btnDurFull');
     const btnResetCut = document.getElementById('btnResetCut');
 
-    // Timeline Cutting Controls
+    // Timeline Cutting Controls (Fixed 3-Second Cut from Start)
     const timelineCutTrack = document.getElementById('timelineCutTrack');
     const timelineCutRange = document.getElementById('timelineCutRange');
     const cutStatusText = document.getElementById('cutStatusText');
+    const btnPreviewCut = document.getElementById('btnPreviewCut');
+    const videoStartSlider = document.getElementById('videoStartSlider');
+    const valStartTimeText = document.getElementById('valStartTimeText');
+    const btnSetStartHere = document.getElementById('btnSetStartHere');
+    const btnStartMinus = document.getElementById('btnStartMinus');
+    const btnStartPlus = document.getElementById('btnStartPlus');
     const btnCutIn = document.getElementById('btnCutIn');
     const btnCutOut = document.getElementById('btnCutOut');
-    const btnPreviewCut = document.getElementById('btnPreviewCut');
 
     // Watermark Elements
     const viewfinderWatermark = document.getElementById('viewfinderWatermark');
@@ -273,11 +278,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (imageFiles.length > 1) {
             handleImageFiles(imageFiles);
+            setTimeout(() => {
+                if (btnConvertBatchAll) btnConvertBatchAll.click();
+            }, 100);
             return;
         }
 
         if (imageFiles.length === 1) {
-            loadImageIntoStudio(imageFiles[0]);
+            loadImageAndConvertImmediately(imageFiles[0]);
             return;
         }
 
@@ -386,12 +394,22 @@ document.addEventListener('DOMContentLoaded', () => {
             videoNativeRes.textContent = `${w} × ${h}`;
             videoNativeDuration.textContent = formatTime(dur);
 
-            // Configure trimming
+            // Configure 3-second cut from start (0.0s)
             trimStart.value = '0.0';
-            const defaultDuration = Math.min(6.0, Math.max(1.0, dur));
-            trimEnd.value = defaultDuration.toFixed(1);
+            const defaultCutDur = Math.min(3.0, Math.max(0.1, dur));
+            trimEnd.value = defaultCutDur.toFixed(1);
             trimStart.max = Math.max(0, dur - 0.2).toFixed(1);
             trimEnd.max = dur.toFixed(1);
+
+            if (videoStartSlider) {
+                videoStartSlider.min = '0';
+                videoStartSlider.max = Math.max(0, dur - 0.2).toFixed(1);
+                videoStartSlider.step = '0.1';
+                videoStartSlider.value = '0';
+            }
+            if (valStartTimeText) {
+                valStartTimeText.textContent = '0.0s';
+            }
 
             updateTrimmingValues();
             updateTimelineCutTrack();
@@ -892,51 +910,87 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // Trimming, Cutting & Duration Controls
     // =========================================================================
-    trimStart.addEventListener('input', () => {
-        let s = Math.max(0, parseFloat(trimStart.value) || 0);
-        if (sourceVideo.duration) {
-            s = Math.min(s, sourceVideo.duration - 0.2);
-            sourceVideo.currentTime = s;
-        }
-        updateTrimmingValues();
-    });
+    // =========================================================================
+    // Video 3-Second Trimming & Cutting from Start Point
+    // =========================================================================
+    function setVideoCutStart(startTime) {
+        if (!sourceVideo.duration) return;
+        const totalDur = sourceVideo.duration;
+        const maxStart = Math.max(0, totalDur - 0.2);
+        const validStart = Math.max(0, Math.min(maxStart, startTime));
 
-    trimEnd.addEventListener('input', () => {
-        let e = parseFloat(trimEnd.value) || 6.0;
-        if (sourceVideo.duration) {
-            e = Math.min(e, sourceVideo.duration);
-            sourceVideo.currentTime = e;
-        }
-        updateTrimmingValues();
-    });
+        if (trimStart) trimStart.value = validStart.toFixed(1);
+        if (trimEnd) trimEnd.value = Math.min(totalDur, validStart + 3.0).toFixed(1);
 
-    // ✂️ Cut In (Start) button
+        if (videoStartSlider) {
+            videoStartSlider.value = validStart.toFixed(1);
+        }
+        if (valStartTimeText) {
+            valStartTimeText.textContent = `${validStart.toFixed(1)}s`;
+        }
+
+        sourceVideo.currentTime = validStart;
+        updateTrimmingValues();
+    }
+
+    if (videoStartSlider) {
+        videoStartSlider.addEventListener('input', (e) => {
+            const s = parseFloat(e.target.value) || 0;
+            setVideoCutStart(s);
+        });
+    }
+
+    if (btnSetStartHere) {
+        btnSetStartHere.addEventListener('click', () => {
+            if (!sourceVideo.duration) return;
+            const cur = Math.max(0, sourceVideo.currentTime || 0);
+            setVideoCutStart(cur);
+            showToast(`📍 Start set to ${cur.toFixed(1)}s (3.0s cut)`, 'info');
+        });
+    }
+
+    if (btnStartMinus) {
+        btnStartMinus.addEventListener('click', () => {
+            const cur = parseFloat(trimStart ? trimStart.value : 0) || 0;
+            setVideoCutStart(Math.max(0, cur - 0.5));
+        });
+    }
+
+    if (btnStartPlus) {
+        btnStartPlus.addEventListener('click', () => {
+            const cur = parseFloat(trimStart ? trimStart.value : 0) || 0;
+            setVideoCutStart(cur + 0.5);
+        });
+    }
+
+    if (trimStart) {
+        trimStart.addEventListener('input', () => {
+            let s = Math.max(0, parseFloat(trimStart.value) || 0);
+            setVideoCutStart(s);
+        });
+    }
+
+    if (trimEnd) {
+        trimEnd.addEventListener('input', () => {
+            updateTrimmingValues();
+        });
+    }
+
+    // ✂️ Cut In (Start) button (backward compatibility)
     if (btnCutIn) {
         btnCutIn.addEventListener('click', () => {
             if (!sourceVideo.duration) return;
             const cur = Math.max(0, sourceVideo.currentTime);
-            trimStart.value = cur.toFixed(1);
-            let e = parseFloat(trimEnd.value) || sourceVideo.duration;
-            if (e <= cur + 0.2) {
-                trimEnd.value = Math.min(sourceVideo.duration, cur + 3.0).toFixed(1);
-            }
-            updateTrimmingValues();
-            showToast(`✂️ Cut Start set to ${cur.toFixed(1)}s`, 'info');
+            setVideoCutStart(cur);
         });
     }
 
-    // ✂️ Cut Out (End) button
+    // ✂️ Cut Out (End) button (backward compatibility)
     if (btnCutOut) {
         btnCutOut.addEventListener('click', () => {
             if (!sourceVideo.duration) return;
             const cur = Math.min(sourceVideo.duration, sourceVideo.currentTime);
-            let s = parseFloat(trimStart.value) || 0;
-            if (cur <= s + 0.2) {
-                trimStart.value = Math.max(0, cur - 3.0).toFixed(1);
-            }
-            trimEnd.value = cur.toFixed(1);
-            updateTrimmingValues();
-            showToast(`✂️ Cut End set to ${cur.toFixed(1)}s`, 'info');
+            setVideoCutStart(Math.max(0, cur - 3.0));
         });
     }
 
@@ -944,7 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnPreviewCut) {
         btnPreviewCut.addEventListener('click', () => {
             if (!sourceVideo.duration) return;
-            const sTime = Math.max(0, parseFloat(trimStart.value) || 0);
+            const sTime = Math.max(0, parseFloat(trimStart ? trimStart.value : 0) || 0);
             sourceVideo.currentTime = sTime;
             isPlayingCutPreview = true;
             btnPreviewCut.classList.add('active-preview');
@@ -956,60 +1010,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // ↺ Reset Cut button
     if (btnResetCut) {
         btnResetCut.addEventListener('click', () => {
-            if (!sourceVideo.duration) return;
-            trimStart.value = '0.0';
-            trimEnd.value = sourceVideo.duration.toFixed(1);
-            updateTrimmingValues();
-            showToast('Cut range reset to full video', 'info');
+            setVideoCutStart(0);
+            showToast('Reset cut start to 0.0s (3.0s cut)', 'info');
         });
     }
 
-    btnDur3.addEventListener('click', () => setTrimDuration(3.0));
-    btnDur6.addEventListener('click', () => setTrimDuration(6.0));
-    btnDur10.addEventListener('click', () => setTrimDuration(10.0));
-    btnDurFull.addEventListener('click', () => {
-        trimStart.value = '0.0';
-        trimEnd.value = (sourceVideo.duration || 6.0).toFixed(1);
-        updateTrimmingValues();
-    });
+    if (btnDur3) btnDur3.addEventListener('click', () => setTrimDuration(3.0));
+    if (btnDur6) btnDur6.addEventListener('click', () => setTrimDuration(3.0));
+    if (btnDur10) btnDur10.addEventListener('click', () => setTrimDuration(3.0));
+    if (btnDurFull) btnDurFull.addEventListener('click', () => setTrimDuration(3.0));
 
     function setTrimDuration(seconds) {
         if (!sourceVideo.duration) return;
-        const dur = Math.min(seconds, sourceVideo.duration);
-        const start = parseFloat(trimStart.value) || 0;
-        if (start + dur <= sourceVideo.duration) {
-            trimEnd.value = (start + dur).toFixed(1);
-        } else {
-            trimEnd.value = sourceVideo.duration.toFixed(1);
-            trimStart.value = Math.max(0, sourceVideo.duration - dur).toFixed(1);
-        }
-        updateTrimmingValues();
+        const cur = parseFloat(trimStart ? trimStart.value : 0) || 0;
+        setVideoCutStart(cur);
+    }
+
+    function updateConvertButtonLabel() {
+        if (!btnConvert) return;
+        const s = parseFloat(trimStart ? trimStart.value : 0) || 0;
+        const e = parseFloat(trimEnd ? trimEnd.value : 3.0) || 3.0;
+        const dur = Math.max(0.1, e - s);
+        btnConvert.innerHTML = `⚡ Convert 3s Video to WebP <span style="font-size: 13px; font-weight: 500; opacity: 0.9; margin-left: 8px;">(${s.toFixed(1)}s – ${e.toFixed(1)}s • ${dur.toFixed(1)}s)</span>`;
     }
 
     function updateTrimmingValues() {
         let maxDur = sourceVideo.duration || 100;
-        let s = Math.max(0, parseFloat(trimStart.value) || 0);
-        let e = Math.min(maxDur, parseFloat(trimEnd.value) || 6.0);
-        if (e <= s) e = Math.min(maxDur, s + 0.5);
+        let s = Math.max(0, parseFloat(trimStart ? trimStart.value : 0) || 0);
+        // Fixed 3-second cut from start:
+        let e = Math.min(maxDur, s + 3.0);
+        if (trimEnd) trimEnd.value = e.toFixed(1);
 
         const duration = Math.max(0.1, e - s);
-        valDuration.textContent = `${duration.toFixed(1)} sec`;
+        if (valDuration) valDuration.textContent = `${duration.toFixed(1)} sec`;
 
-        // Highlight active duration chip
-        btnDur3.classList.toggle('active', Math.abs(duration - 3.0) < 0.2);
-        btnDur6.classList.toggle('active', Math.abs(duration - 6.0) < 0.2);
-        btnDur10.classList.toggle('active', Math.abs(duration - 10.0) < 0.2);
-        btnDurFull.classList.toggle('active', Math.abs(duration - (sourceVideo.duration || 0)) < 0.2);
+        if (valStartTimeText) valStartTimeText.textContent = `${s.toFixed(1)}s`;
+        if (videoStartSlider) videoStartSlider.value = s.toFixed(1);
 
         updateTimelineCutTrack();
         updateEstimation();
+        updateConvertButtonLabel();
     }
 
     function updateTimelineCutTrack() {
         if (!timelineCutRange) return;
-        const totalDur = sourceVideo.duration || 6.0;
-        const s = Math.max(0, parseFloat(trimStart.value) || 0);
-        const e = Math.min(totalDur, parseFloat(trimEnd.value) || totalDur);
+        const totalDur = sourceVideo.duration || 3.0;
+        const s = Math.max(0, parseFloat(trimStart ? trimStart.value : 0) || 0);
+        const e = Math.min(totalDur, parseFloat(trimEnd ? trimEnd.value : totalDur) || totalDur);
         const duration = Math.max(0.1, e - s);
 
         const leftPct = (s / totalDur) * 100;
@@ -1019,7 +1066,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timelineCutRange.style.width = `${Math.max(1, Math.min(100 - leftPct, widthPct)).toFixed(2)}%`;
 
         if (cutStatusText) {
-            cutStatusText.textContent = `Cut: ${s.toFixed(1)}s – ${e.toFixed(1)}s (${duration.toFixed(1)}s)`;
+            cutStatusText.textContent = `Cut: ${s.toFixed(1)}s – ${e.toFixed(1)}s (Fixed 3.0s Cut)`;
         }
     }
 
@@ -2649,7 +2696,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------------------
-    // Load Image File into Single Studio
+    // Load Image File and Convert Immediately to 1:1 WebP
+    // -------------------------------------------------------------------------
+    function loadImageAndConvertImmediately(file) {
+        if (!file) return;
+        currentImgFile = file;
+        imgRotation = 0;
+        imgCropRatioX = 0.5;
+        imgCropRatioY = 0.5;
+
+        if (currentImgBlobUrl) {
+            URL.revokeObjectURL(currentImgBlobUrl);
+        }
+        currentImgBlobUrl = URL.createObjectURL(file);
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = async () => {
+            currentImgElement = img;
+            if (imgSourceDisplay) {
+                imgSourceDisplay.src = currentImgBlobUrl;
+                imgSourceDisplay.style.transform = 'none';
+            }
+
+            // Topbar Metadata
+            if (imgFileName) imgFileName.textContent = file.name;
+            if (imgNativeRes) imgNativeRes.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+
+            const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+            if (imgNativeSize) imgNativeSize.textContent = file.size > 1024 * 1024 ? `${sizeMb} MB` : `${Math.round(file.size / 1024)} KB`;
+
+            const format = file.type ? file.type.replace('image/', '').toUpperCase() : 'IMAGE';
+            if (imgNativeFormat) imgNativeFormat.textContent = format;
+
+            // Headline slug suggestion
+            if (imgArticleHeadline) {
+                const rawTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+                imgArticleHeadline.value = rawTitle;
+            }
+
+            // Set standard 1:1 square dimensions: 720x720
+            setImgDimensions(720, 720);
+
+            showToast(`Converting ${file.name} immediately to 1:1 WebP...`, 'info');
+            await convertImageToWebp();
+        };
+
+        img.onerror = () => {
+            showToast('Could not decode the selected image file.', 'error');
+        };
+
+        img.src = currentImgBlobUrl;
+    }
+
+    // -------------------------------------------------------------------------
+    // Load Image File into Single Studio (Fallback)
     // -------------------------------------------------------------------------
     function loadImageIntoStudio(file) {
         currentImgFile = file;
@@ -2971,12 +3072,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (imgAutoSavedPath) imgAutoSavedPath.textContent = 'Downloads/' + filename;
         }
 
-        const shouldPrompt = chkAutoPromptNew ? chkAutoPromptNew.checked : true;
-        if (shouldPrompt && newVideoModal) {
-            setTimeout(() => {
-                newVideoModal.classList.add('active');
-            }, 600);
-        }
+        // No modal prompt for images - present results directly with action buttons
+        // (Convert Another Photo, Download, Copy, etc.)
     }
 
     // Results Actions (Image Mode)
@@ -3519,16 +3616,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const blob = await res.blob();
                 const file = new File([blob], 'global_summit_press_conference.jpg', { type: 'image/jpeg' });
                 setActiveMode('image');
-                loadImageIntoStudio(file);
-                showToast('Loaded demo news photo (1920×1080 JPEG)!', 'success');
+                loadImageAndConvertImmediately(file);
             } catch (err) {
                 console.warn('Network sample photo fetch unavailable, generating high-res editorial photo:', err);
                 try {
                     const fallbackBlob = await generateNewsroomDemoPhoto();
                     const file = new File([fallbackBlob], 'global_summit_press_conference.jpg', { type: 'image/jpeg' });
                     setActiveMode('image');
-                    loadImageIntoStudio(file);
-                    showToast('Loaded high-res demo editorial photo!', 'success');
+                    loadImageAndConvertImmediately(file);
                 } catch (fallbackErr) {
                     showToast('Could not generate demo photo: ' + fallbackErr.message, 'error');
                 }
