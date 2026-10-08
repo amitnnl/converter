@@ -1087,8 +1087,8 @@ document.addEventListener('DOMContentLoaded', () => {
         viewfinderWatermark.classList.remove('hidden');
         if (watermarkConfigPanel) watermarkConfigPanel.classList.remove('disabled');
 
-        const text = (watermarkText ? watermarkText.value : 'GROUND ZERO').trim();
-        const displayText = text || 'GROUND ZERO';
+        const text = (watermarkText ? watermarkText.value : 'GROUND ZERO NEWS').trim();
+        const displayText = text || 'GROUND ZERO NEWS';
 
         if (viewfinderWatermarkText) {
             viewfinderWatermarkText.textContent = displayText;
@@ -1097,9 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
             valWatermarkBadge.textContent = displayText;
         }
 
-        const pos = 'center';
-        const style = (watermarkStyle ? watermarkStyle.value : 'badge');
-        viewfinderWatermark.className = `viewfinder-watermark-overlay pos-center style-${style}`;
+        viewfinderWatermark.className = 'viewfinder-watermark-overlay pos-bottom-center';
 
         const opVal = watermarkOpacity ? (parseInt(watermarkOpacity.value, 10) || 85) : 85;
         viewfinderWatermark.style.opacity = (opVal / 100).toString();
@@ -1333,12 +1331,12 @@ document.addEventListener('DOMContentLoaded', () => {
             quality = Math.min(0.70, quality * (240 / estKb));
         }
 
-        // Watermark Configuration
+        // Watermark Configuration (Plain text, bottom-center)
         const watermarkOpts = {
             enabled: enableWatermark ? enableWatermark.checked : true,
-            text: (watermarkText ? watermarkText.value : 'GROUND ZERO').trim() || 'GROUND ZERO',
-            position: watermarkPosition ? watermarkPosition.value : 'bottom-right',
-            style: watermarkStyle ? watermarkStyle.value : 'badge',
+            text: (watermarkText ? watermarkText.value : 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS',
+            position: watermarkPosition ? watermarkPosition.value : 'bottom-center',
+            style: 'plain',
             opacity: watermarkOpacity ? (parseInt(watermarkOpacity.value, 10) || 85) : 85
         };
 
@@ -1431,7 +1429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     offscreenCtx.drawImage(sourceVideo, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
                 }
 
-                // Apply Editorial Watermark (e.g. "GROUND ZERO") onto frame
+                // Apply Editorial Watermark (e.g. "GROUND ZERO NEWS") onto frame
                 if (watermarkOpts.enabled) {
                     drawWatermarkOnCanvas(offscreenCtx, targetW, targetH, watermarkOpts);
                 }
@@ -1571,120 +1569,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Stamp editorial watermark ("GROUND ZERO") on canvas frame
+     * Stamp plain text watermark ("GROUND ZERO NEWS") at bottom center on canvas frame
+     * Clean, plain text with zero background, zero dot, and zero shadow.
      */
     function drawWatermarkOnCanvas(ctx, canvasW, canvasH, options) {
         if (!options || !options.enabled) return;
-        const text = (options.text || 'GROUND ZERO').trim();
+        const text = (options.text || 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS';
         if (!text) return;
 
-        const style = options.style || 'badge'; // 'badge', 'pill', 'shadow'
         const opacity = Math.max(0.1, Math.min(1, (options.opacity || 85) / 100));
 
         ctx.save();
         ctx.globalAlpha = opacity;
 
-        // Substantially increased font size: base 36px on 720px width (65% increase for commanding center watermark)
         const scale = canvasW / 720;
-        const fontSize = Math.max(16, Math.round(36 * scale));
-        ctx.font = `900 ${fontSize}px "Outfit", "Plus Jakarta Sans", "Inter", -apple-system, sans-serif`;
-        ctx.textBaseline = 'middle';
+        const fontSize = Math.max(14, Math.round(24 * scale));
+        ctx.font = `800 ${fontSize}px "Outfit", "Plus Jakarta Sans", "Inter", -apple-system, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
 
-        const textMetrics = ctx.measureText(text);
-        const textWidth = textMetrics.width;
+        // Plain text: NO background, NO dot, NO shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.fillStyle = '#ffffff';
 
-        const dotSize = Math.max(8, Math.round(12 * scale));
-        const padX = Math.round(22 * scale);
-        const padY = Math.round(12 * scale);
-        const dotMargin = (style === 'badge' || style === 'pill') ? Math.round(12 * scale) : 0;
-        const totalContentWidth = (style === 'badge' || style === 'pill') ? (dotSize + dotMargin + textWidth) : textWidth;
-        const boxWidth = totalContentWidth + (padX * 2);
-        const boxHeight = fontSize + (padY * 2);
+        // Bottom center positioning with scaled bottom margin
+        const x = Math.round(canvasW / 2);
+        const bottomMargin = Math.round(22 * scale);
+        const y = Math.round(canvasH - bottomMargin);
 
-        // Center only: "and the water marks increas some size of the text set it in the center only"
-        const boxX = Math.round((canvasW - boxWidth) / 2);
-        const boxY = Math.round((canvasH - boxHeight) / 2);
-
-        const drawRoundedRect = (x, y, w, h, radius) => {
-            if (ctx.roundRect) {
-                ctx.beginPath();
-                ctx.roundRect(x, y, w, h, radius);
-            } else {
-                ctx.beginPath();
-                ctx.moveTo(x + radius, y);
-                ctx.lineTo(x + w - radius, y);
-                ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-                ctx.lineTo(x + w, y + h - radius);
-                ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-                ctx.lineTo(x + radius, y + h);
-                ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-                ctx.lineTo(x, y + radius);
-                ctx.quadraticCurveTo(x, y, x + radius, y);
-                ctx.closePath();
-            }
-        };
-
-        if (style === 'badge') {
-            // Newsroom Live Badge (Black glass background with red live dot)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-            ctx.lineWidth = Math.max(1.5, Math.round(2 * scale));
-            
-            const r = Math.round(6 * scale);
-            drawRoundedRect(boxX, boxY, boxWidth, boxHeight, r);
-            ctx.fill();
-            ctx.stroke();
-
-            // Red live broadcast dot
-            const dotCenterX = boxX + padX + (dotSize / 2);
-            const dotCenterY = boxY + (boxHeight / 2);
-            ctx.fillStyle = '#ef4444';
-            ctx.beginPath();
-            ctx.arc(dotCenterX, dotCenterY, dotSize / 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Watermark text
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-            ctx.shadowBlur = 6 * scale;
-            ctx.shadowOffsetX = 1;
-            ctx.shadowOffsetY = 1;
-            ctx.fillText(text, boxX + padX + dotSize + dotMargin, boxY + (boxHeight / 2));
-
-        } else if (style === 'pill') {
-            // High-tech editorial pill with cyan border
-            ctx.fillStyle = 'rgba(14, 20, 36, 0.94)';
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
-            ctx.lineWidth = Math.max(1.5, Math.round(2 * scale));
-
-            const r = boxHeight / 2;
-            drawRoundedRect(boxX, boxY, boxWidth, boxHeight, r);
-            ctx.fill();
-            ctx.stroke();
-
-            // Cyan dot
-            const dotCenterX = boxX + padX + (dotSize / 2);
-            const dotCenterY = boxY + (boxHeight / 2);
-            ctx.fillStyle = '#06b6d4';
-            ctx.beginPath();
-            ctx.arc(dotCenterX, dotCenterY, dotSize / 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Text
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillText(text, boxX + padX + dotSize + dotMargin, boxY + (boxHeight / 2));
-
-        } else {
-            // Shadowed embossed text (No bounding box) - optical center
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.98)';
-            ctx.shadowBlur = 12 * scale;
-            ctx.shadowOffsetX = 2 * scale;
-            ctx.shadowOffsetY = 2 * scale;
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.fillText(text, Math.round(canvasW / 2), Math.round(canvasH / 2));
-        }
-
+        ctx.fillText(text, x, y);
         ctx.restore();
     }
 
@@ -2599,18 +2515,15 @@ document.addEventListener('DOMContentLoaded', () => {
             imgWatermarkConfigPanel.classList.toggle('disabled', !isEnabled);
         }
 
-        const text = (imgWatermarkText.value || 'GROUND ZERO').trim() || 'GROUND ZERO';
+        const text = (imgWatermarkText.value || 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS';
         if (imgViewfinderWatermarkText) imgViewfinderWatermarkText.textContent = text;
-        if (valImgWatermarkBadge) valImgWatermarkBadge.textContent = text.slice(0, 16);
+        if (valImgWatermarkBadge) valImgWatermarkBadge.textContent = text;
 
-        imgViewfinderWatermark.className = 'viewfinder-watermark-overlay pos-center';
+        imgViewfinderWatermark.className = 'viewfinder-watermark-overlay pos-bottom-center';
         if (!isEnabled) {
             imgViewfinderWatermark.classList.add('hidden');
             return;
         }
-
-        const style = imgWatermarkStyle ? imgWatermarkStyle.value : 'badge';
-        imgViewfinderWatermark.classList.add(`style-${style}`);
 
         const opacity = (parseInt(imgWatermarkOpacity.value, 10) || 85) / 100;
         imgViewfinderWatermark.style.opacity = opacity;
@@ -2990,9 +2903,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (enableImgWatermark && enableImgWatermark.checked) {
                 const watermarkOpts = {
                     enabled: true,
-                    text: (imgWatermarkText.value || 'GROUND ZERO').trim() || 'GROUND ZERO',
-                    position: 'center',
-                    style: imgWatermarkStyle ? imgWatermarkStyle.value : 'badge',
+                    text: (imgWatermarkText.value || 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS',
+                    position: 'bottom-center',
+                    style: 'plain',
                     opacity: parseInt(imgWatermarkOpacity.value, 10) || 85
                 };
                 drawWatermarkOnCanvas(imageOffscreenCtx, targetW, targetH, watermarkOpts);
@@ -3434,9 +3347,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (watermark) {
                         drawWatermarkOnCanvas(imageOffscreenCtx, targetW, targetH, {
                             enabled: true,
-                            text: (imgWatermarkText ? imgWatermarkText.value : 'GROUND ZERO') || 'GROUND ZERO',
-                            position: 'center',
-                            style: 'badge',
+                            text: (imgWatermarkText ? imgWatermarkText.value : 'GROUND ZERO NEWS') || 'GROUND ZERO NEWS',
+                            position: 'bottom-center',
+                            style: 'plain',
                             opacity: 85
                         });
                     }

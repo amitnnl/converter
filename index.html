@@ -93,7 +93,7 @@
         <section class="hero-banner">
             <div class="hero-text">
                 <h1>Editorial Media to 1:1 WebP Converter</h1>
-                <p>Instant 1:1 square WebP conversion for photos, and precise 3-second cuts from your chosen start point for videos. Client-side, embargo safe with "GROUND ZERO" watermark.</p>
+                <p>Instant 1:1 square WebP conversion for photos, and precise 3-second cuts from your chosen start point for videos. Client-side, embargo safe with "GROUND ZERO NEWS" watermark.</p>
             </div>
             <div class="hero-quick-tools">
                 <button id="btnLoadDemoImage" class="btn btn-accent btn-sm">
@@ -126,7 +126,7 @@
                 <span class="chip-tag">🎯 1:1 Editorial Ratio</span>
                 <span class="chip-tag">⚡ Immediate Photo WebP</span>
                 <span class="chip-tag">🎬 3s Video Cut from Start</span>
-                <span class="chip-tag">🏷️ "GROUND ZERO" Watermark</span>
+                <span class="chip-tag">🏷️ "GROUND ZERO NEWS" Watermark</span>
                 <span class="chip-tag">💾 Direct Device Downloads</span>
                 <span class="chip-tag">🔒 Zero Server Uploads</span>
             </div>
@@ -153,10 +153,9 @@
                     <!-- 1:1 Aspect Ratio Cropping Viewfinder Overlay -->
                     <div class="crop-overlay-container" id="cropOverlayContainer">
                         <div class="crop-guide-square" id="cropGuideSquare">
-                            <!-- Live Viewfinder Watermark Overlay (Centered) -->
-                            <div id="viewfinderWatermark" class="viewfinder-watermark-overlay pos-center">
-                                <span class="watermark-dot"></span>
-                                <span id="viewfinderWatermarkText" class="watermark-text-display">GROUND ZERO</span>
+                            <!-- Live Viewfinder Watermark Overlay (Bottom Center Plain Text) -->
+                            <div id="viewfinderWatermark" class="viewfinder-watermark-overlay pos-bottom-center">
+                                <span id="viewfinderWatermarkText" class="watermark-text-display">GROUND ZERO NEWS</span>
                             </div>
                         </div>
                     </div>
@@ -239,9 +238,9 @@
                 <input type="range" id="qualityRange" min="20" max="95" step="5" value="55">
                 <input type="range" id="fpsRange" min="5" max="24" step="1" value="10">
                 <input type="checkbox" id="enableWatermark" checked>
-                <input type="text" id="watermarkText" value="GROUND ZERO">
-                <input type="hidden" id="watermarkPosition" value="center">
-                <select id="watermarkStyle"><option value="badge" selected>Badge</option></select>
+                <input type="text" id="watermarkText" value="GROUND ZERO NEWS">
+                <input type="hidden" id="watermarkPosition" value="bottom-center">
+                <select id="watermarkStyle"><option value="plain" selected>Plain</option></select>
                 <input type="range" id="watermarkOpacity" value="85">
                 <input type="radio" name="framingMode" id="modeFill" value="fill" checked>
                 <input type="radio" name="framingMode" id="modeBlur" value="blur">
@@ -250,7 +249,7 @@
                 <span id="valResolution">512 × 512</span>
                 <span id="valFps">10 FPS</span>
                 <span id="valQuality">55%</span>
-                <span id="valWatermarkBadge">GROUND ZERO</span>
+                <span id="valWatermarkBadge">GROUND ZERO NEWS</span>
                 <span id="valWatermarkOpacity">85%</span>
                 <span id="estFrames">30 frames</span>
                 <span id="estSize">~250 KB</span>
@@ -411,9 +410,8 @@
                         
                         <div class="crop-overlay-container" id="imgCropOverlayContainer">
                             <div class="image-crop-guide" id="imgCropGuide" data-label="1:1 Square">
-                                <div id="imgViewfinderWatermark" class="viewfinder-watermark-overlay pos-center">
-                                    <span class="watermark-dot"></span>
-                                    <span id="imgViewfinderWatermarkText" class="watermark-text-display">GROUND ZERO</span>
+                                <div id="imgViewfinderWatermark" class="viewfinder-watermark-overlay pos-bottom-center">
+                                    <span id="imgViewfinderWatermarkText" class="watermark-text-display">GROUND ZERO NEWS</span>
                                 </div>
                             </div>
                         </div>
@@ -452,16 +450,16 @@
                     <input type="range" id="imgQualityRange" min="10" max="100" step="2" value="75">
                     <input type="checkbox" id="chkLosslessWebp">
                     <input type="checkbox" id="enableImgWatermark" checked>
-                    <input type="text" id="imgWatermarkText" value="GROUND ZERO">
-                    <input type="hidden" id="imgWatermarkPosition" value="center">
-                    <select id="imgWatermarkStyle"><option value="badge" selected>Badge</option></select>
+                    <input type="text" id="imgWatermarkText" value="GROUND ZERO NEWS">
+                    <input type="hidden" id="imgWatermarkPosition" value="bottom-center">
+                    <select id="imgWatermarkStyle"><option value="plain" selected>Plain</option></select>
                     <input type="range" id="imgWatermarkOpacity" value="85">
                     <input type="radio" name="imgFramingMode" id="imgModeFill" value="fill" checked>
                     <input type="radio" name="imgFramingMode" id="imgModeBlur" value="blur">
                     <input type="radio" name="imgFramingMode" id="imgModeSolid" value="solid">
                     <span id="valImgResolution">720 × 720</span>
                     <span id="valImgQuality">75%</span>
-                    <span id="valImgWatermarkBadge">GROUND ZERO</span>
+                    <span id="valImgWatermarkBadge">GROUND ZERO NEWS</span>
                     <span id="valImgWatermarkOpacity">85%</span>
                     <span id="estImgSize">~65 KB</span>
                     <span id="estImgVitals">🎯 Strictly Under 100 KB Met ✅</span>
