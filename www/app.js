@@ -2738,6 +2738,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Set standard 1:1 square dimensions: 720x720
             setImgDimensions(720, 720);
 
+            if (dropzone) dropzone.classList.add('hidden');
+            if (studioSection) studioSection.classList.add('hidden');
+            if (imageStudioSection) imageStudioSection.classList.add('hidden');
+            if (imageBatchSection) imageBatchSection.classList.add('hidden');
+            if (resultsSection) resultsSection.classList.add('hidden');
+
             showToast(`Converting ${file.name} immediately to 1:1 WebP...`, 'info');
             await convertImageToWebp();
         };
@@ -3055,6 +3061,11 @@ document.addEventListener('DOMContentLoaded', () => {
             metricImgVitals.style.color = 'var(--brand-amber)';
         }
 
+        if (dropzone) dropzone.classList.add('hidden');
+        if (studioSection) studioSection.classList.add('hidden');
+        if (imageStudioSection) imageStudioSection.classList.add('hidden');
+        if (imageBatchSection) imageBatchSection.classList.add('hidden');
+        if (resultsSection) resultsSection.classList.add('hidden');
         imageResultsSection.classList.remove('hidden');
         imageResultsSection.scrollIntoView({ behavior: 'smooth' });
 
@@ -3132,21 +3143,17 @@ document.addEventListener('DOMContentLoaded', () => {
         btnNewImage.addEventListener('click', () => {
             imageResultsSection.classList.add('hidden');
             imageStudioSection.classList.add('hidden');
-            imageUploadSection.classList.remove('hidden');
+            if (dropzone) dropzone.classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(() => {
-                if (imageFileInput) imageFileInput.click();
-            }, 250);
+                if (mediaFileInput) mediaFileInput.click();
+            }, 100);
         });
     }
 
     if (btnChangeImage) {
         btnChangeImage.addEventListener('click', () => {
-            imageStudioSection.classList.add('hidden');
-            imageUploadSection.classList.remove('hidden');
-            setTimeout(() => {
-                if (imageFileInput) imageFileInput.click();
-            }, 200);
+            if (mediaFileInput) mediaFileInput.click();
         });
     }
 
@@ -3157,9 +3164,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!files || files.length === 0) return;
 
         if (files.length === 1 && batchQueue.length === 0) {
-            loadImageIntoStudio(files[0]);
+            loadImageAndConvertImmediately(files[0]);
         } else {
             loadImagesIntoBatch(files);
+            setTimeout(() => {
+                if (btnConvertBatchAll) btnConvertBatchAll.click();
+            }, 60);
         }
     }
 
@@ -3252,7 +3262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             card.addEventListener('click', () => {
-                loadImageIntoStudio(item.file);
+                if (item.webpBlob) downloadBatchItem(item);
             });
 
             batchCardsGrid.appendChild(card);
@@ -3306,7 +3316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnSwitchSingleStudio) {
         btnSwitchSingleStudio.addEventListener('click', () => {
             if (batchQueue.length > 0) {
-                loadImageIntoStudio(batchQueue[0].file);
+                loadImageAndConvertImmediately(batchQueue[0].file);
             } else {
                 showToast('Queue is empty. Load photos first.', 'info');
             }
@@ -3522,33 +3532,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------------------
     if (btnBrowseImageFiles) {
         btnBrowseImageFiles.addEventListener('click', () => {
-            imageFileInput.click();
-        });
-    }
-
-    if (imageFileInput) {
-        imageFileInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files.length > 0) {
-                handleImageFiles(Array.from(e.target.files));
-                imageFileInput.value = '';
-            }
-        });
-    }
-
-    if (imageUploadSection) {
-        imageUploadSection.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            imageUploadSection.classList.add('dragover');
-        });
-        imageUploadSection.addEventListener('dragleave', () => {
-            imageUploadSection.classList.remove('dragover');
-        });
-        imageUploadSection.addEventListener('drop', (e) => {
-            e.preventDefault();
-            imageUploadSection.classList.remove('dragover');
-            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                handleImageFiles(Array.from(e.dataTransfer.files));
-            }
+            if (mediaFileInput) mediaFileInput.click();
         });
     }
 
@@ -3572,7 +3556,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imageFiles.length > 0) {
             setActiveMode('image');
             showToast(`Pasted ${imageFiles.length} photo${imageFiles.length > 1 ? 's' : ''} from clipboard!`, 'success');
-            handleImageFiles(imageFiles);
+            if (imageFiles.length === 1) {
+                loadImageAndConvertImmediately(imageFiles[0]);
+            } else {
+                handleImageFiles(imageFiles);
+            }
         }
     });
 
@@ -3594,8 +3582,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (imageFiles.length > 0) {
                         setActiveMode('image');
-                        handleImageFiles(imageFiles);
                         showToast(`Pasted ${imageFiles.length} photo(s) from clipboard!`, 'success');
+                        if (imageFiles.length === 1) {
+                            loadImageAndConvertImmediately(imageFiles[0]);
+                        } else {
+                            handleImageFiles(imageFiles);
+                        }
                         return;
                     }
                 }

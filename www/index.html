@@ -363,39 +363,9 @@
                     </div>
                 </div>
 
-                <!-- Batch Global Settings Toolbar -->
+                <!-- Batch Actions Bar (Clean & Instant) -->
                 <div class="batch-toolbar card-clean">
-                    <div class="batch-toolbar-grid">
-                        <div class="input-box">
-                            <span>Batch 1:1 Editorial Preset</span>
-                            <select id="batchPresetSelect" class="select-control">
-                                <option value="1:1-720" selected>📰 1:1 News Teaser (720×720 • &lt;100 KB)</option>
-                                <option value="1:1-600">📑 1:1 Editorial Grid (600×600 • ~50 KB)</option>
-                                <option value="1:1-480">⚡ 1:1 Mobile Fast (480×480 • ~35 KB)</option>
-                                <option value="1:1-800">💎 1:1 Clean Press (800×800 • &lt;100 KB)</option>
-                                <option value="1:1-360">👤 1:1 Byline / Micro (360×360 • ~20 KB)</option>
-                            </select>
-                        </div>
-                        <div class="input-box">
-                            <div class="label-with-val">
-                                <span>Batch Quality (Auto &lt;100 KB)</span>
-                                <span id="valBatchQuality">75%</span>
-                            </div>
-                            <input type="range" id="batchQualityRange" min="10" max="100" step="2" value="75">
-                        </div>
-                        <div class="input-box">
-                            <span>Article / Slug Prefix</span>
-                            <input type="text" id="batchSlugPrefix" class="input-control" placeholder="e.g. news_lead_" value="press_article_">
-                        </div>
-                        <div class="input-box" style="display: flex; flex-direction: column; justify-content: flex-end;">
-                            <label class="toggle-switch-label" for="batchEnableWatermark">
-                                <input type="checkbox" id="batchEnableWatermark" checked>
-                                <span class="toggle-switch-slider"></span>
-                                <span class="watermark-title-text" style="font-size: 13px;">Apply Agency Watermark</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="batch-toolbar-bottom">
+                    <div class="batch-toolbar-bottom" style="margin-top: 0; padding-top: 0; border-top: none;">
                         <button id="btnConvertBatchAll" class="btn btn-primary btn-md">
                             ⚡ Convert All Photos to WebP
                         </button>
@@ -405,7 +375,7 @@
                         <button id="btnAutoSaveBatchAll" class="btn btn-secondary btn-md hidden">
                             💾 Save All to Device
                         </button>
-                        <div class="batch-status-note" id="batchGlobalStatus">Ready to convert</div>
+                        <div class="batch-status-note" id="batchGlobalStatus">Converting queue to 1:1 WebP...</div>
                     </div>
                     <!-- Batch progress bar -->
                     <div id="batchProgressBarWrap" class="progress-bar-wrap hidden" style="margin-top: 12px;">
@@ -419,10 +389,9 @@
                 </div>
             </section>
 
-            <!-- Single Image Editorial Studio Workspace (Hidden until photo loaded) -->
+            <!-- Single Image Studio (Fallback State, Zero Settings Clutter) -->
             <section id="imageStudioSection" class="editorial-studio hidden">
                 
-                <!-- Studio Left: Viewfinder & Crop Stage -->
                 <div class="studio-stage-card">
                     <div class="stage-topbar">
                         <div class="file-info-badge">
@@ -432,20 +401,16 @@
                             <span class="meta-pill" id="imgNativeFormat">JPEG</span>
                         </div>
                         <div class="stage-topbar-actions" style="display: flex; gap: 8px;">
-                            <button id="btnImgRotate" class="btn btn-secondary btn-sm" title="Rotate 90 degrees clockwise">↻ Rotate</button>
                             <button id="btnChangeImage" class="btn btn-secondary btn-sm">Change Image</button>
-                            <button id="btnBatchFromStudio" class="btn btn-accent btn-sm hidden">📂 Batch View</button>
                         </div>
                     </div>
 
-                    <!-- Image + Aspect Ratio Framing Viewfinder -->
+                    <!-- Image + 1:1 Aspect Ratio Framing Viewfinder -->
                     <div class="image-viewfinder-wrapper" id="imgViewfinderWrapper">
                         <img id="imgSourceDisplay" alt="Loaded News Photo Preview">
                         
-                        <!-- Aspect Ratio Cropping Viewfinder Overlay -->
                         <div class="crop-overlay-container" id="imgCropOverlayContainer">
-                            <div class="image-crop-guide" id="imgCropGuide" data-label="1:1 Square Editorial">
-                                <!-- Live Viewfinder Watermark Overlay (Centered) -->
+                            <div class="image-crop-guide" id="imgCropGuide" data-label="1:1 Square">
                                 <div id="imgViewfinderWatermark" class="viewfinder-watermark-overlay pos-center">
                                     <span class="watermark-dot"></span>
                                     <span id="imgViewfinderWatermarkText" class="watermark-text-display">GROUND ZERO</span>
@@ -454,35 +419,6 @@
                         </div>
                     </div>
 
-                    <!-- Framing Alignment Toolbar -->
-                    <div class="framing-controls-row">
-                        <div class="framing-label">
-                            <span>🎯 1:1 Framing Alignment:</span>
-                        </div>
-                        <div class="btn-group" id="imgAlignmentGroup">
-                            <button type="button" id="btnImgAlignStart">Top / Left</button>
-                            <button type="button" id="btnImgAlignCenter" class="active">Center (50%)</button>
-                            <button type="button" id="btnImgAlignEnd">Bottom / Right</button>
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-muted);">
-                            Or drag the 1:1 square guide on the photo!
-                        </div>
-                    </div>
-
-                    <!-- Quick 1:1 Square Resolution Selector Tabs -->
-                    <div class="quick-ratio-toolbar">
-                        <span class="ratio-label">1:1 Square Size:</span>
-                        <div class="ratio-chips-row">
-                            <button type="button" class="ratio-chip-btn active" data-ratio="1:1" data-w="720" data-h="720" id="chipRatio720">720×720 (Std • &lt;100KB)</button>
-                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="600" data-h="600" id="chipRatio600">600×600 (Grid)</button>
-                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="480" data-h="480" id="chipRatio480">480×480 (Fast)</button>
-                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="800" data-h="800" id="chipRatio800">800×800 (Press • &lt;100KB)</button>
-                            <button type="button" class="ratio-chip-btn" data-ratio="1:1" data-w="360" data-h="360" id="chipRatio360">360×360 (Micro)</button>
-                        </div>
-                    </div>
-                </div>
-
-                    <!-- Primary Convert Action Button (for studio fallback) -->
                     <div class="studio-action-row" style="margin-top: 18px;">
                         <button id="btnConvertImage" class="btn-convert pulse-glow">
                             ⚡ Convert to 1:1 WebP
@@ -492,6 +428,25 @@
 
                 <!-- Preserved Technical Defaults & Backward-Compatible State (Zero UI Clutter) -->
                 <div class="hidden" aria-hidden="true">
+                    <!-- Batch Preserved Technical Inputs -->
+                    <select id="batchPresetSelect"><option value="1:1-720" selected>1:1-720</option></select>
+                    <input type="range" id="batchQualityRange" min="10" max="100" step="2" value="75">
+                    <span id="valBatchQuality">75%</span>
+                    <input type="text" id="batchSlugPrefix" value="press_article_">
+                    <input type="checkbox" id="batchEnableWatermark" checked>
+                    <button type="button" id="btnSwitchSingleStudio"></button>
+                    <button type="button" id="btnBatchFromStudio"></button>
+                    <button type="button" id="btnImgRotate"></button>
+                    <div id="imgAlignmentGroup">
+                        <button type="button" id="btnImgAlignStart"></button>
+                        <button type="button" id="btnImgAlignCenter" class="active"></button>
+                        <button type="button" id="btnImgAlignEnd"></button>
+                    </div>
+                    <button type="button" id="chipRatio720" class="active" data-ratio="1:1" data-w="720" data-h="720"></button>
+                    <button type="button" id="chipRatio600" data-ratio="1:1" data-w="600" data-h="600"></button>
+                    <button type="button" id="chipRatio480" data-ratio="1:1" data-w="480" data-h="480"></button>
+                    <button type="button" id="chipRatio800" data-ratio="1:1" data-w="800" data-h="800"></button>
+                    <button type="button" id="chipRatio360" data-ratio="1:1" data-w="360" data-h="360"></button>
                     <input type="number" id="imgResWidth" value="720">
                     <input type="number" id="imgResHeight" value="720">
                     <input type="range" id="imgQualityRange" min="10" max="100" step="2" value="75">
