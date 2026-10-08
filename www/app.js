@@ -2509,13 +2509,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Watermark Controls & Live Preview
     function updateImgWatermarkPreview() {
         if (!imgViewfinderWatermark) return;
-        const isEnabled = enableImgWatermark.checked;
+        const isEnabled = enableImgWatermark ? enableImgWatermark.checked : true;
         imgViewfinderWatermark.classList.toggle('hidden', !isEnabled);
         if (imgWatermarkConfigPanel) {
             imgWatermarkConfigPanel.classList.toggle('disabled', !isEnabled);
         }
 
-        const text = (imgWatermarkText.value || 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS';
+        const text = (imgWatermarkText ? imgWatermarkText.value : 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS';
         if (imgViewfinderWatermarkText) imgViewfinderWatermarkText.textContent = text;
         if (valImgWatermarkBadge) valImgWatermarkBadge.textContent = text;
 
@@ -2525,9 +2525,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const opacity = (parseInt(imgWatermarkOpacity.value, 10) || 85) / 100;
+        const opacity = (parseInt(imgWatermarkOpacity ? imgWatermarkOpacity.value : 85, 10) || 85) / 100;
         imgViewfinderWatermark.style.opacity = opacity;
-        if (valImgWatermarkOpacity) valImgWatermarkOpacity.textContent = `${imgWatermarkOpacity.value}%`;
+        if (valImgWatermarkOpacity) valImgWatermarkOpacity.textContent = `${Math.round(opacity * 100)}%`;
     }
 
     if (enableImgWatermark) enableImgWatermark.addEventListener('change', updateImgWatermarkPreview);
@@ -2900,13 +2900,16 @@ document.addEventListener('DOMContentLoaded', () => {
             progressPercent.textContent = '70%';
             progressStatus.textContent = 'Applying newsroom watermark & bug...';
 
-            if (enableImgWatermark && enableImgWatermark.checked) {
+            const shouldImgWatermark = enableImgWatermark ? enableImgWatermark.checked : true;
+            if (shouldImgWatermark) {
+                const textVal = (imgWatermarkText ? imgWatermarkText.value : 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS';
+                const opacityVal = imgWatermarkOpacity ? (parseInt(imgWatermarkOpacity.value, 10) || 85) : 85;
                 const watermarkOpts = {
                     enabled: true,
-                    text: (imgWatermarkText.value || 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS',
+                    text: textVal,
                     position: 'bottom-center',
                     style: 'plain',
-                    opacity: parseInt(imgWatermarkOpacity.value, 10) || 85
+                    opacity: opacityVal
                 };
                 drawWatermarkOnCanvas(imageOffscreenCtx, targetW, targetH, watermarkOpts);
             }
@@ -3345,9 +3348,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     imageOffscreenCtx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
 
                     if (watermark) {
+                        const textVal = (imgWatermarkText ? imgWatermarkText.value : 'GROUND ZERO NEWS').trim() || 'GROUND ZERO NEWS';
                         drawWatermarkOnCanvas(imageOffscreenCtx, targetW, targetH, {
                             enabled: true,
-                            text: (imgWatermarkText ? imgWatermarkText.value : 'GROUND ZERO NEWS') || 'GROUND ZERO NEWS',
+                            text: textVal,
                             position: 'bottom-center',
                             style: 'plain',
                             opacity: 85
